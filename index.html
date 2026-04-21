@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Puget Sound — Port of Tacoma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  :root {
+    --bg: #f0f4f8;
+    --surface: #ffffff;
+    --surface2: #f7f9fc;
+    --border: #e2e8f0;
+    --border2: #cbd5e1;
+    --text: #1e293b;
+    --muted: #64748b;
+    --dim: #94a3b8;
+    --blue: #2563eb;
+    --blue-bg: #eff6ff;
+    --blue-border: #bfdbfe;
+    --green: #16a34a;
+    --green-bg: #f0fdf4;
+    --green-border: #bbf7d0;
+    --amber: #b45309;
+    --amber-bg: #fffbeb;
+    --amber-border: #fde68a;
+    --purple: #7c3aed;
+    --purple-bg: #f5f3ff;
+    --purple-border: #ddd6fe;
+    --teal: #0891b2;
+    --teal-bg: #ecfeff;
+    --red: #dc2626;
+    --font: 'DM Sans', sans-serif;
+    --mono: 'DM Mono', monospace;
+    --radius: 10px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.08);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: var(--bg); color: var(--text); font-family: var(--font); }
+
+  .shell {
+    display: grid;
+    grid-template-rows: 58px 1fr;
+    grid-template-columns: 316px 1fr 296px;
+    height: 100vh;
+  }
+
+  /* HEADER */
+  header {
+    grid-column: 1 / -1;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 20px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    z-index: 100;
+  }
+  .hd-left { display: flex; align-items: center; gap: 14px; }
+  .logo { font-size: 17px; font-weight: 600; color: var(--text); letter-spacing: -0.01em; }
+  .logo span { color: var(--teal); }
+  .live-badge {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.07em; color: var(--green);
+    background: var(--green-bg); border: 1px solid var(--green-border);
+    padding: 3px 8px; border-radius: 20px; font-family: var(--mono);
+  }
+  .pulse { width:6px; height:6px; border-radius:50%; background:var(--green); animation:pulse 2s ease infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.3;transform:scale(0.6)} }
+  .conn-pill {
+    display:flex; align-items:center; gap:5px; font-size:10px; font-family:var(--mono);
+    padding:3px 9px; border-radius:20px; border:1px solid var(--border2); color:var(--muted); background:var(--surface2);
+  }
+  .conn-dot { width:6px; height:6px; border-radius:50%; background:var(--dim); }
+  .conn-dot.live { background:var(--green); animation:pulse 2s ease infinite; }
+  .conn-dot.demo { background:var(--amber); }
+  .hd-right { display:flex; align-items:center; gap:18px; }
+  .hd-stat { display:flex; flex-direction:column; align-items:flex-end; }
+  .hd-stat strong { font-size:15px; font-weight:600; color:var(--text); line-height:1; }
+  .hd-stat span { font-size:10px; color:var(--dim); margin-top:1px; }
+  #clock { font-size:13px; font-weight:500; font-family:var(--mono); color:var(--muted); }
+  .settings-btn {
+    background:var(--surface2); border:1px solid var(--border2); border-radius:8px;
+    color:var(--muted); font-size:11px; font-family:var(--mono); padding:5px 11px; cursor:pointer; transition:all 0.15s;
+  }
+  .settings-btn:hover { background:var(--border); color:var(--text); }
+
+  /* PANELS */
+  .panel { overflow-y:auto; overflow-x:hidden; background:var(--surface); border-right:1px solid var(--border); }
+  .panel:last-child { border-right:none; border-left:1px solid var(--border); }
+  .panel::-webkit-scrollbar { width:4px; }
+  .panel::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+  .panel-header {
+    position:sticky; top:0; z-index:10; padding:11px 14px 9px;
+    background:var(--surface); border-bottom:1px solid var(--border);
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .panel-title { font-size:10px; font-weight:600; letter-spacing:0.09em; color:var(--muted); text-transform:uppercase; }
+  .panel-count { font-size:10px; font-family:var(--mono); color:var(--dim); background:var(--bg); padding:2px 7px; border-radius:10px; border:1px solid var(--border); }
+
+  /* STATS */
+  .stats-strip { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--border); }
+  .stat-cell { padding:10px 8px; text-align:center; border-right:1px solid var(--border); background:var(--surface2); }
+  .stat-cell:last-child { border-right:none; }
+  .stat-n { font-size:20px; font-weight:600; line-height:1; }
+  .stat-l { font-size:9px; text-transform:uppercase; letter-spacing:0.08em; color:var(--dim); margin-top:2px; }
+  .stat-n.blue{color:var(--blue)} .stat-n.green{color:var(--green)} .stat-n.amber{color:var(--amber)} .stat-n.teal{color:var(--teal)}
+
+  .section-label { padding:10px 14px 5px; font-size:9px; font-weight:600; letter-spacing:0.1em; color:var(--dim); text-transform:uppercase; }
+
+  /* SHIP CARDS */
+  .ship-card {
+    margin:0 10px 8px; border-radius:var(--radius); border:1px solid var(--border);
+    background:var(--surface); overflow:hidden; cursor:pointer;
+    box-shadow:var(--shadow); transition:box-shadow 0.15s, border-color 0.15s;
+  }
+  .ship-card:hover { box-shadow:var(--shadow-md); border-color:var(--border2); }
+  .ship-card.arriving { border-top:3px solid var(--blue); }
+  .ship-card.departing { border-top:3px solid var(--green); }
+  .ship-card.inport    { border-top:3px solid var(--amber); }
+
+  .ship-photo-wrap { position:relative; }
+  .ship-photo { width:100%; height:96px; object-fit:cover; display:block; background:var(--bg); }
+  .photo-badge {
+    position:absolute; top:6px; right:6px; font-size:9px; font-family:var(--mono);
+    font-weight:500; padding:3px 7px; border-radius:5px; letter-spacing:0.05em;
+  }
+  .photo-badge.arr  { background:var(--blue-bg);  color:var(--blue);  border:1px solid var(--blue-border); }
+  .photo-badge.dep  { background:var(--green-bg); color:var(--green); border:1px solid var(--green-border); }
+  .photo-badge.port { background:var(--amber-bg); color:var(--amber); border:1px solid var(--amber-border); }
+
+  .photo-placeholder {
+    width:100%; height:96px; background:linear-gradient(135deg,#e8f0fe 0%,#dbeafe 100%);
+    display:flex; align-items:center; justify-content:center; position:relative; overflow:hidden;
+  }
+  .photo-placeholder svg { opacity:0.45; }
+  .ship-type-label { position:absolute; bottom:5px; left:8px; font-size:9px; font-family:var(--mono); color:var(--muted); letter-spacing:0.08em; text-transform:uppercase; }
+
+  .ship-body { padding:8px 11px 10px; }
+  .ship-name { font-size:13px; font-weight:600; color:var(--text); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ship-meta { display:grid; grid-template-columns:1fr 1fr; gap:4px 8px; }
+  .ship-kv { display:flex; flex-direction:column; }
+  .ship-k { font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:0.07em; margin-bottom:1px; }
+  .ship-v { font-size:11px; color:var(--muted); font-family:var(--mono); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ship-v.hi { color:var(--text); font-weight:500; }
+
+  /* WHALE CARDS */
+  .whale-card {
+    margin:0 10px 8px; border-radius:var(--radius);
+    border:1px solid var(--purple-border); border-left:3px solid var(--purple);
+    background:var(--purple-bg); padding:10px 12px; box-shadow:var(--shadow);
+  }
+  .whale-header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:4px; }
+  .whale-species { font-size:12px; font-weight:600; color:var(--purple); }
+  .whale-time { font-size:10px; font-family:var(--mono); color:var(--dim); }
+  .whale-location { font-size:11px; color:var(--muted); margin-bottom:6px; }
+  .whale-tags { display:flex; gap:5px; flex-wrap:wrap; }
+  .whale-tag { font-size:9px; font-family:var(--mono); font-weight:500; padding:2px 7px; border-radius:4px; background:var(--surface); color:var(--purple); border:1px solid var(--purple-border); }
+  .whale-tag.teal { color:var(--teal); background:var(--teal-bg); border-color:#a5f3fc; }
+
+  /* WEATHER */
+  .weather-block {
+    margin:10px 10px 6px; border-radius:var(--radius); border:1px solid var(--border);
+    background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);
+    padding:13px 15px; box-shadow:var(--shadow);
+  }
+  .weather-main { display:flex; justify-content:space-between; align-items:center; margin-bottom:11px; }
+  .weather-temp { font-size:34px; font-weight:600; color:var(--text); line-height:1; }
+  .weather-cond { font-size:12px; color:var(--muted); margin-top:3px; }
+  .weather-grid { display:grid; grid-template-columns:1fr 1fr; gap:7px; }
+  .w-item { display:flex; flex-direction:column; gap:1px; }
+  .w-k { font-size:9px; color:var(--dim); text-transform:uppercase; letter-spacing:0.07em; }
+  .w-v { font-size:12px; font-family:var(--mono); color:var(--text); }
+
+  /* MAP */
+  .map-wrap { position:relative; background:#e8f4f8; }
+  #map { width:100%; height:100%; }
+  .map-overlay {
+    position:absolute; bottom:12px; left:12px; z-index:500;
+    background:rgba(255,255,255,0.92); border:1px solid var(--border2);
+    border-radius:var(--radius); padding:9px 13px;
+    font-size:11px; font-family:var(--mono); box-shadow:var(--shadow-md);
+  }
+  .leg-row { display:flex; align-items:center; gap:7px; margin-bottom:5px; color:var(--muted); }
+  .leg-row:last-child { margin-bottom:0; }
+  .leg-dot { width:10px; height:10px; border-radius:2px; flex-shrink:0; }
+  .api-banner {
+    position:absolute; top:12px; left:50%; transform:translateX(-50%); z-index:500;
+    background:var(--amber-bg); border:1px solid var(--amber-border);
+    border-radius:8px; padding:7px 14px; font-size:11px; font-family:var(--mono);
+    color:var(--amber); display:none; white-space:nowrap; box-shadow:var(--shadow);
+  }
+
+  /* LEAFLET */
+  .leaflet-container { font-family:var(--font); }
+  .leaflet-popup-content-wrapper { background:var(--surface); color:var(--text); border:1px solid var(--border2); border-radius:var(--radius); box-shadow:var(--shadow-md); }
+  .leaflet-popup-tip { background:var(--surface); }
+  .leaflet-popup-content { font-family:var(--font); font-size:12px; line-height:1.6; margin:10px 14px; }
+  .leaflet-popup-content strong { color:var(--teal); font-weight:600; }
+
+  /* MODAL */
+  .modal-bg { display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,0.35); backdrop-filter:blur(4px); align-items:center; justify-content:center; }
+  .modal-bg.open { display:flex; }
+  .modal { background:var(--surface); border:1px solid var(--border2); border-radius:14px; padding:26px; width:440px; max-width:95vw; box-shadow:var(--shadow-md); }
+  .modal h2 { font-size:16px; font-weight:600; margin-bottom:6px; color:var(--text); }
+  .modal p { font-size:12px; color:var(--muted); line-height:1.6; margin-bottom:18px; }
+  .modal label { font-size:10px; color:var(--dim); text-transform:uppercase; letter-spacing:0.07em; display:block; margin-bottom:5px; font-weight:600; }
+  .modal input { width:100%; padding:9px 12px; background:var(--surface2); border:1px solid var(--border2); border-radius:7px; color:var(--text); font-family:var(--mono); font-size:12px; margin-bottom:18px; outline:none; transition:border-color 0.15s; }
+  .modal input:focus { border-color:var(--teal); }
+  .modal-btns { display:flex; gap:10px; justify-content:flex-end; }
+  .btn { padding:8px 18px; border-radius:7px; font-family:var(--font); font-size:13px; font-weight:600; cursor:pointer; border:none; transition:opacity 0.15s; }
+  .btn:hover { opacity:0.85; }
+  .btn-secondary { background:var(--surface2); color:var(--muted); border:1px solid var(--border2); }
+  .btn-primary { background:var(--teal); color:#fff; }
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="hd-left">
+      <div class="logo">Puget <span>Sound</span></div>
+      <div class="live-badge"><div class="pulse"></div>LIVE</div>
+      <div class="conn-pill"><div class="conn-dot" id="connDot"></div><span id="connLabel">Demo mode</span></div>
+    </div>
+    <div class="hd-right">
+      <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
+      <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
+      <span id="clock">--:--</span>
+      <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
+    </div>
+  </header>
+
+  <div class="panel" id="vesselPanel">
+    <div class="stats-strip">
+      <div class="stat-cell"><div class="stat-n blue"  id="s-arr">4</div><div class="stat-l">Arriving</div></div>
+      <div class="stat-cell"><div class="stat-n green" id="s-dep">2</div><div class="stat-l">Departing</div></div>
+      <div class="stat-cell"><div class="stat-n amber" id="s-port">3</div><div class="stat-l">In port</div></div>
+      <div class="stat-cell"><div class="stat-n teal"  id="s-total">9</div><div class="stat-l">In sound</div></div>
+    </div>
+    <div id="vesselList"></div>
+  </div>
+
+  <div class="map-wrap">
+    <div id="map"></div>
+    <div class="api-banner" id="apiBanner">⚠ Demo mode — click "API Keys" to connect live AIS feed</div>
+    <div class="map-overlay">
+      <div class="leg-row"><div class="leg-dot" style="background:#2563eb"></div>Approaching</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#16a34a"></div>Departing</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#b45309"></div>In port</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#7c3aed;border-radius:50%"></div>Whale sighting</div>
+    </div>
+  </div>
+
+  <div class="panel" id="rightPanel">
+    <div class="panel-header">
+      <span class="panel-title">Weather · Tacoma</span>
+      <span class="panel-count" id="weatherTime">Loading...</span>
+    </div>
+    <div class="weather-block">
+      <div class="weather-main">
+        <div><div class="weather-temp" id="wTemp">--°F</div><div class="weather-cond" id="wCond">Loading...</div></div>
+        <div style="font-size:34px" id="wIcon">🌥</div>
+      </div>
+      <div class="weather-grid">
+        <div class="w-item"><div class="w-k">Wind</div><div class="w-v" id="wWind">--</div></div>
+        <div class="w-item"><div class="w-k">Visibility</div><div class="w-v" id="wVis">--</div></div>
+        <div class="w-item"><div class="w-k">Humidity</div><div class="w-v" id="wHum">--</div></div>
+        <div class="w-item"><div class="w-k">Pressure</div><div class="w-v" id="wPres">--</div></div>
+      </div>
+    </div>
+
+    <div class="panel-header" style="margin-top:2px">
+      <span class="panel-title">Whale &amp; Orca Sightings</span>
+      <span class="panel-count" id="whaleCount">Loading...</span>
+    </div>
+    <div id="whaleList" style="padding-top:8px"></div>
+  </div>
+
+</div>
+
+<div class="modal-bg" id="configModal">
+  <div class="modal">
+    <h2>API Configuration</h2>
+    <p>Enter your free AISStream key to switch from demo data to live vessel tracking. Your key is saved in your browser — you only need to do this once per device.</p>
+    <label>AISStream.io API Key <a href="https://aisstream.io" target="_blank" style="color:var(--teal);font-size:10px;margin-left:6px;font-weight:400;">Get a free key ↗</a></label>
+    <input type="text" id="aisKeyInput" placeholder="Paste your key here...">
+    <div class="modal-btns">
+      <button class="btn btn-secondary" onclick="document.getElementById('configModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-primary" onclick="saveConfig()">Save &amp; Connect</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let aisKey = localStorage.getItem('aisKey') || '';
+let wsConn = null;
+let vessels = {};
+let whales = [];
+let mapMarkers = {};
+let whaleMapMarkers = [];
+
+// MAP
+const map = L.map('map', {zoomControl:false, attributionControl:false}).setView([47.27,-122.42],10);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+L.control.zoom({position:'bottomright'}).addTo(map);
+
+function makeShipIcon(status) {
+  const c = {arriving:'#2563eb',departing:'#16a34a',inport:'#b45309'}[status]||'#64748b';
+  return L.divIcon({
+    html:`<svg xmlns="http://www.w3.org/2000/svg" width="22" height="28" viewBox="0 0 22 28"><polygon points="11,2 20,22 11,18 2,22" fill="${c}" stroke="white" stroke-width="1.5" opacity="0.95"/></svg>`,
+    className:'', iconSize:[22,28], iconAnchor:[11,14]
+  });
+}
+function makeWhaleIcon() {
+  return L.divIcon({
+    html:`<svg xmlns="http://www.w3.org/2000/svg" width="26" height="26" viewBox="0 0 26 26"><circle cx="13" cy="13" r="11" fill="#7c3aed" opacity="0.18" stroke="#7c3aed" stroke-width="1.5"/><text x="13" y="18" text-anchor="middle" font-size="13">🐋</text></svg>`,
+    className:'', iconSize:[26,26], iconAnchor:[13,13]
+  });
+}
+
+// PHOTOS
+function getPhotoUrl(mmsi) {
+  return `https://photos.marinetraffic.com/ais/showphoto.aspx?mmsi=${mmsi}&size=thumb`;
+}
+function shipSVG(type) {
+  const defs = {
+    'Container':`<rect x="4" y="10" width="24" height="6" rx="1" fill="#93c5fd"/><rect x="7" y="5" width="4" height="6" fill="#60a5fa"/><rect x="13" y="5" width="4" height="6" fill="#60a5fa"/><rect x="19" y="6" width="3" height="5" fill="#60a5fa"/><polygon points="4,16 28,16 30,21 2,21" fill="#bfdbfe"/>`,
+    'Bulk':`<ellipse cx="16" cy="14" rx="12" ry="5" fill="#93c5fd"/><rect x="8" y="8" width="5" height="7" rx="1" fill="#60a5fa"/><rect x="16" y="8" width="5" height="7" rx="1" fill="#60a5fa"/><polygon points="5,16 27,16 29,21 3,21" fill="#bfdbfe"/>`,
+    'Tanker':`<ellipse cx="16" cy="13" rx="12" ry="4" fill="#93c5fd"/><circle cx="9" cy="13" r="3" fill="#60a5fa"/><circle cx="16" cy="13" r="3" fill="#60a5fa"/><circle cx="23" cy="13" r="3" fill="#60a5fa"/><polygon points="5,16 27,16 29,21 3,21" fill="#bfdbfe"/>`,
+    'default':`<rect x="4" y="9" width="24" height="8" rx="2" fill="#93c5fd"/><rect x="10" y="4" width="7" height="6" rx="1" fill="#60a5fa"/><polygon points="4,17 28,17 30,21 2,21" fill="#bfdbfe"/>`
+  };
+  const s = defs[type]||defs['default'];
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 26" style="position:absolute;inset:0;width:100%;height:100%"><rect width="32" height="26" fill="#dbeafe"/>${s}</svg>`;
+}
+
+// RENDER VESSELS
+function renderVessels() {
+  const arr = Object.values(vessels);
+  const arriving  = arr.filter(v=>v.status==='arriving');
+  const departing = arr.filter(v=>v.status==='departing');
+  const inport    = arr.filter(v=>v.status==='inport');
+  document.getElementById('s-arr').textContent   = arriving.length;
+  document.getElementById('s-dep').textContent   = departing.length;
+  document.getElementById('s-port').textContent  = inport.length;
+  document.getElementById('s-total').textContent = arr.length;
+  document.getElementById('hd-vessels').textContent = arr.length;
+
+  let html='';
+  if (arriving.length)  { html+=`<div class="section-label">▲ Approaching Tacoma</div>`; arriving.forEach(v=>html+=cardHTML(v)); }
+  if (departing.length) { html+=`<div class="section-label">▼ Departing</div>`;           departing.forEach(v=>html+=cardHTML(v)); }
+  if (inport.length)    { html+=`<div class="section-label">⚓ In Port</div>`;             inport.forEach(v=>html+=cardHTML(v)); }
+  document.getElementById('vesselList').innerHTML = html;
+}
+
+function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+
+function cardHTML(v) {
+  const bc = {arriving:'arr',departing:'dep',inport:'port'}[v.status];
+  const bl = {arriving:'ARRIVING',departing:'DEPARTING',inport:'IN PORT'}[v.status];
+  const fromTo    = v.status==='departing'?'Destination':'From';
+  const fromToVal = v.status==='departing'?(v.destination||'—'):(v.origin||'—');
+  const etaLbl    = v.status==='inport'?'Arrived':(v.status==='departing'?'Speed':'ETA / Speed');
+  const etaVal    = v.status==='inport'?(v.arrivedAgo||'—'):(v.eta?v.eta+(v.speed?' · '+v.speed+' kn':''):(v.speed?v.speed+' kn':'—'));
+  const svgEsc    = esc(shipSVG(v.shipType));
+  const typeEsc   = esc(v.shipType||'Vessel');
+
+  return `<div class="ship-card ${v.status}" onclick="focusVessel('${v.mmsi}')">
+    <div class="ship-photo-wrap">
+      <img class="ship-photo" src="${getPhotoUrl(v.mmsi)}" alt="${esc(v.name)}"
+        onerror="var w=this.parentNode;var b=w.querySelector('.photo-badge').outerHTML;w.innerHTML='<div class=\\'photo-placeholder\\'>${svgEsc}<div class=\\'ship-type-label\\'>${typeEsc}</div></div>'+b;">
+      <div class="photo-badge ${bc}">${bl}</div>
+    </div>
+    <div class="ship-body">
+      <div class="ship-name">${v.name}</div>
+      <div class="ship-meta">
+        <div class="ship-kv"><div class="ship-k">Type</div><div class="ship-v">${v.shipType||'—'}</div></div>
+        <div class="ship-kv"><div class="ship-k">Flag</div><div class="ship-v">${v.flag||'—'}</div></div>
+        <div class="ship-kv"><div class="ship-k">${fromTo}</div><div class="ship-v hi">${fromToVal}</div></div>
+        <div class="ship-kv"><div class="ship-k">${etaLbl}</div><div class="ship-v hi">${etaVal}</div></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function focusVessel(mmsi) {
+  const v = vessels[mmsi];
+  if (v&&v.lat&&v.lng) { map.setView([v.lat,v.lng],12,{animate:true}); if (mapMarkers[mmsi]) mapMarkers[mmsi].openPopup(); }
+}
+
+// RENDER WHALES
+function renderWhales() {
+  const list = document.getElementById('whaleList');
+  document.getElementById('whaleCount').textContent = whales.length+' (24h)';
+  document.getElementById('hd-whales').textContent  = whales.length;
+  if (!whales.length) { list.innerHTML=`<div style="padding:24px 16px;text-align:center;color:var(--dim);font-size:12px;">No sightings reported in the last 24 hours</div>`; return; }
+  list.innerHTML = whales.map(w=>`<div class="whale-card">
+    <div class="whale-header"><div class="whale-species">${w.species}</div><div class="whale-time">${w.timeAgo}</div></div>
+    <div class="whale-location">📍 ${w.location}</div>
+    <div class="whale-tags">
+      ${w.pod   ?`<span class="whale-tag">${w.pod}</span>`:''}
+      ${w.count ?`<span class="whale-tag teal">${w.count}</span>`:''}
+      ${w.heading?`<span class="whale-tag teal">${w.heading}</span>`:''}
+    </div>
+  </div>`).join('');
+}
+
+// MAP MARKERS
+function updateMapMarkers() {
+  Object.values(mapMarkers).forEach(m=>map.removeLayer(m)); mapMarkers={};
+  Object.values(vessels).forEach(v=>{
+    if (!v.lat||!v.lng) return;
+    const m = L.marker([v.lat,v.lng],{icon:makeShipIcon(v.status),title:v.name});
+    m.bindPopup(`<strong>${v.name}</strong><br>${v.shipType||'Vessel'} · ${v.flag||''}<br>${v.status==='departing'?'To: '+(v.destination||'?'):'From: '+(v.origin||'?')}<br>Speed: ${v.speed||'—'} kn`);
+    m.addTo(map); mapMarkers[v.mmsi]=m;
+  });
+  whaleMapMarkers.forEach(m=>map.removeLayer(m)); whaleMapMarkers=[];
+  whales.forEach(w=>{
+    if (!w.lat||!w.lng) return;
+    const m = L.marker([w.lat,w.lng],{icon:makeWhaleIcon()});
+    m.bindPopup(`<strong>${w.species}</strong><br>${w.location}<br>${w.timeAgo}`);
+    m.addTo(map); whaleMapMarkers.push(m);
+  });
+}
+
+// AIS WEBSOCKET
+function connectAIS() {
+  if (!aisKey) return;
+  if (wsConn) wsConn.close();
+  const dot=document.getElementById('connDot'), lbl=document.getElementById('connLabel');
+  dot.className='conn-dot'; lbl.textContent='Connecting...';
+  wsConn = new WebSocket('wss://stream.aisstream.io/v0/stream');
+  wsConn.onopen = ()=>{
+    wsConn.send(JSON.stringify({APIKey:aisKey,BoundingBoxes:[[[46.8,-122.9],[48.5,-122.1]]],FilterMessageTypes:['PositionReport','ShipStaticData']}));
+    dot.className='conn-dot live'; lbl.textContent='Live AIS feed';
+    document.getElementById('apiBanner').style.display='none';
+  };
+  wsConn.onmessage = evt=>{ try{ processAIS(JSON.parse(evt.data)); }catch(e){} };
+  wsConn.onerror   = ()=>{ dot.style.background='#dc2626'; lbl.textContent='Connection error'; };
+  wsConn.onclose   = ()=>{ if(aisKey) setTimeout(connectAIS,5000); };
+}
+function processAIS(msg) {
+  const mmsi=msg.MetaData?.MMSI?.toString(); if(!mmsi) return;
+  if(!vessels[mmsi]) vessels[mmsi]={mmsi};
+  const v=vessels[mmsi];
+  v.lat  = msg.MetaData?.latitude;
+  v.lng  = msg.MetaData?.longitude;
+  v.name = msg.MetaData?.ShipName?.trim()||v.name||`Vessel ${mmsi}`;
+  if(msg.Message?.ShipStaticData){ const s=msg.Message.ShipStaticData; v.destination=s.Destination?.trim(); v.shipType=typeFromCode(s.Type); v.flag=flagFromMMSI(mmsi); }
+  if(msg.Message?.PositionReport){ const p=msg.Message.PositionReport; v.speed=Math.round(p.Sog*10)/10; v.heading=p.Cog;
+    if(p.NavigationalStatus===1||p.NavigationalStatus===5) v.status='inport';
+    else if(v.destination?.includes('TACOMA')&&v.speed>1) v.status='arriving';
+    else if(v.speed>1) v.status=(v.heading>90&&v.heading<270)?'departing':'arriving'; }
+  renderVessels(); updateMapMarkers();
+}
+function typeFromCode(c){ if(!c) return 'Vessel'; if(c>=70&&c<=79) return 'Container'; if(c>=80&&c<=89) return 'Tanker'; if(c>=60&&c<=69) return 'Passenger'; return 'Bulk'; }
+function flagFromMMSI(m){ const f={'338':'🇺🇸','316':'🇨🇦','477':'🇭🇰','352':'🇵🇦','374':'🇵🇦','215':'🇲🇹','440':'🇰🇷','441':'🇰🇷','412':'🇨🇳','413':'🇨🇳','431':'🇯🇵','432':'🇯🇵','566':'🇸🇬'}; return f[m.substring(0,3)]||'🌐'; }
+
+// WHALE API
+async function fetchWhales(){
+  try{
+    const res=await fetch('https://hotline.whalemuseum.org/api.json?species=orca,humpback,gray+whale,minke&recent=24&limit=20');
+    if(!res.ok) throw new Error();
+    const data=await res.json();
+    const sp={'orca':'Orca (Killer Whale)','gray whale':'Gray Whale','humpback':'Humpback Whale','minke':'Minke Whale'};
+    const tp={'southern resident':'Southern Resident','transient':"Bigg's / Transient",'northern resident':'Northern Resident'};
+    whales=data.filter(w=>w.species).map(w=>({
+      species:sp[w.species?.toLowerCase()]||w.species,
+      location:w.description||'Puget Sound area',
+      timeAgo:timeAgo(w.created_at),
+      pod:w.orca_type?(tp[w.orca_type.toLowerCase()]||w.orca_type)+(w.orca_pod?' · '+w.orca_pod.toUpperCase()+' pod':''):null,
+      count:w.quantity?w.quantity+' individual'+(w.quantity>1?'s':''):null,
+      heading:null,
+      lat:w.latitude?parseFloat(w.latitude):null,
+      lng:w.longitude?parseFloat(w.longitude):null,
+    }));
+  }catch(e){/* keep demo */}
+  renderWhales(); updateMapMarkers();
+}
+function timeAgo(iso){ if(!iso) return ''; const diff=Date.now()-new Date(iso).getTime(); const h=Math.floor(diff/3600000),m=Math.floor(diff/60000); if(m<60) return m+'m ago'; if(h<24) return h+'h ago'; return Math.floor(h/24)+'d ago'; }
+
+// WEATHER
+async function fetchWeather(){
+  try{
+    const r=await fetch('https://api.open-meteo.com/v1/forecast?latitude=47.27&longitude=-122.42&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,surface_pressure&temperature_unit=fahrenheit&wind_speed_unit=kn&timezone=America%2FLos_Angeles');
+    const d=await r.json(); const c=d.current;
+    document.getElementById('wTemp').textContent=Math.round(c.temperature_2m)+'°F';
+    document.getElementById('wWind').textContent=windDir(c.wind_direction_10m)+' '+Math.round(c.wind_speed_10m)+' kn';
+    document.getElementById('wHum').textContent=c.relative_humidity_2m+'%';
+    document.getElementById('wPres').textContent=(c.surface_pressure*0.02953).toFixed(2)+' inHg';
+    document.getElementById('wVis').textContent='—';
+    const wmo={0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',45:'Foggy',51:'Light drizzle',61:'Light rain',63:'Rain',71:'Light snow',80:'Showers',95:'Thunderstorm'};
+    const ico={0:'☀️',1:'🌤',2:'🌥',3:'☁️',45:'🌫',51:'🌦',61:'🌧',63:'🌧',71:'🌨',80:'🌦',95:'⛈'};
+    document.getElementById('wCond').textContent=wmo[c.weather_code]||'Cloudy';
+    document.getElementById('wIcon').textContent=ico[c.weather_code]||'🌥';
+    document.getElementById('weatherTime').textContent='Just updated';
+  }catch(e){ document.getElementById('weatherTime').textContent='Unavailable'; }
+}
+function windDir(deg){ return ['N','NE','E','SE','S','SW','W','NW'][Math.round(deg/45)%8]; }
+
+// DEMO DATA
+function loadDemoData(){
+  document.getElementById('apiBanner').style.display='block';
+  document.getElementById('connDot').className='conn-dot demo';
+  vessels={
+    '366123450':{mmsi:'366123450',name:'MSC Beatrice',    status:'arriving', shipType:'Container',flag:'🇵🇦',origin:'Shanghai, CN',  destination:'Tacoma',      eta:'3h 20min',speed:14.2,lat:47.82,lng:-122.55},
+    '441234567':{mmsi:'441234567',name:'Hyundai Neptune', status:'arriving', shipType:'Container',flag:'🇰🇷',origin:'Busan, KR',      destination:'Tacoma',      eta:'6h 45min',speed:12.8,lat:47.95,lng:-122.48},
+    '477987654':{mmsi:'477987654',name:'OOCL Seattle',    status:'arriving', shipType:'Container',flag:'🇭🇰',origin:'Yokohama, JP',   destination:'Tacoma',      eta:'11h 10min',speed:11.3,lat:48.18,lng:-122.42},
+    '338567890':{mmsi:'338567890',name:'Pacific Horizon', status:'arriving', shipType:'Bulk',     flag:'🇺🇸',origin:'Vancouver, BC',  destination:'Tacoma',      eta:'1h 50min',speed:9.5, lat:47.48,lng:-122.51},
+    '352456789':{mmsi:'352456789',name:'Zim Kingston',    status:'departing',shipType:'Container',flag:'🇵🇦',origin:'Tacoma',         destination:'Los Angeles', speed:11.1,lat:47.22,lng:-122.55},
+    '215876543':{mmsi:'215876543',name:'CMA CGM Jade',    status:'departing',shipType:'Container',flag:'🇲🇹',origin:'Tacoma',         destination:'Shanghai, CN',speed:13.4,lat:47.18,lng:-122.48},
+    '412234560':{mmsi:'412234560',name:'Ever Golden',     status:'inport',   shipType:'Container',flag:'🇨🇳',origin:'Kaohsiung, TW',  destination:'Tacoma',      arrivedAgo:'14h ago',lat:47.27,lng:-122.41},
+    '431098765':{mmsi:'431098765',name:'Pacific Cobalt',  status:'inport',   shipType:'Bulk',     flag:'🇯🇵',origin:'Osaka, JP',       destination:'Tacoma',      arrivedAgo:'2 days ago',lat:47.25,lng:-122.43},
+    '566123450':{mmsi:'566123450',name:'APL Danube',      status:'inport',   shipType:'Container',flag:'🇸🇬',origin:'Singapore',       destination:'Tacoma',      arrivedAgo:'6h ago',lat:47.28,lng:-122.40},
+  };
+  whales=[
+    {species:'Orca (Killer Whale)',location:'Near Vashon Island',  timeAgo:'1h ago',   pod:'J Pod · Southern Resident',count:'12 individuals',heading:'Heading south',lat:47.38,lng:-122.47},
+    {species:'Gray Whale',         location:'Off Point Defiance',  timeAgo:'3h ago',   pod:null,count:'1 individual',  heading:'Northbound',               lat:47.30,lng:-122.53},
+    {species:'Orca (Killer Whale)',location:'Commencement Bay',    timeAgo:'Yesterday',pod:"Bigg's / Transient",       count:'4 individuals',heading:null,  lat:47.23,lng:-122.39},
+    {species:'Harbor Porpoise',    location:'Tacoma Narrows',      timeAgo:'Yesterday',pod:null,count:'Small group',   heading:null,                        lat:47.26,lng:-122.55},
+  ];
+  renderVessels(); renderWhales(); updateMapMarkers();
+}
+
+// CONFIG
+function saveConfig(){
+  aisKey=document.getElementById('aisKeyInput').value.trim();
+  if(aisKey) localStorage.setItem('aisKey',aisKey);
+  document.getElementById('configModal').classList.remove('open');
+  if(aisKey){ vessels={}; connectAIS(); }
+}
+
+// CLOCK
+function updateClock(){
+  document.getElementById('clock').textContent =
+    new Date().toLocaleTimeString('en-US',{timeZone:'America/Los_Angeles',hour:'2-digit',minute:'2-digit',hour12:false})+' PDT';
+}
+
+// INIT
+document.getElementById('aisKeyInput').value = aisKey;
+updateClock(); setInterval(updateClock,15000);
+fetchWeather(); setInterval(fetchWeather,600000);
+fetchWhales();  setInterval(fetchWhales,300000);
+if(aisKey){ connectAIS(); } else { loadDemoData(); }
+setInterval(()=>{ if(!aisKey){ Object.values(vessels).forEach(v=>{ if(v.lat) v.lat+=(Math.random()-0.5)*0.003; if(v.lng) v.lng+=(Math.random()-0.5)*0.003; }); updateMapMarkers(); } },15000);
+</script>
+</body>
+</html>
