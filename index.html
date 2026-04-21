@@ -593,24 +593,46 @@ function connectAIS() {
   wsConn.onerror   = ()=>{ dot.style.background='#dc2626'; lbl.textContent='Connection error'; };
   wsConn.onclose   = ()=>{ if(aisKey) setTimeout(connectAIS,5000); };
 }
+let renderTimer = null;
+function scheduleRender() {
+  if (renderTimer) return;
+  renderTimer = setTimeout(()=>{ renderTimer=null; renderVessels(); updateMapMarkers(); }, 1000);
+}
+
+function inferStatus(v) {
+  if (v.navStatus===1||v.navStatus===5) return 'inport';
+  if (v.speed !== undefined && v.speed < 0.5) return 'inport';
+  if (v.destination) {
+    const d = v.destination.toUpperCase();
+    if (d.includes('TACOMA')||d.includes('TAC')||d.includes('SEATTLE')||d.includes('SEA')) return 'arriving';
+  }
+  if (v.heading !== undefined) {
+    return (v.heading >= 135 && v.heading <= 225) ? 'arriving' : 'departing';
+  }
+  return 'arriving';
+}
+
 function processAIS(msg) {
   const mmsi=msg.MetaData?.MMSI?.toString(); if(!mmsi) return;
-  if(!vessels[mmsi]) vessels[mmsi]={mmsi};
+  if(!vessels[mmsi]) vessels[mmsi]={mmsi, status:'arriving'};
   const v=vessels[mmsi];
   v.lat  = msg.MetaData?.latitude;
   v.lng  = msg.MetaData?.longitude;
   v.name = msg.MetaData?.ShipName?.trim()||v.name||`Vessel ${mmsi}`;
+  v.flag = v.flag || flagFromMMSI(mmsi);
   if(msg.Message?.ShipStaticData){
     const s=msg.Message.ShipStaticData;
-    v.destination=s.Destination?.trim(); v.shipType=typeFromCode(s.Type); v.flag=flagFromMMSI(mmsi);
+    if(s.Destination?.trim()) v.destination=s.Destination.trim();
+    if(s.Type) v.shipType=typeFromCode(s.Type);
   }
   if(msg.Message?.PositionReport){
-    const p=msg.Message.PositionReport; v.speed=Math.round(p.Sog*10)/10; v.heading=p.Cog;
-    if(p.NavigationalStatus===1||p.NavigationalStatus===5) v.status='inport';
-    else if(v.destination?.includes('TACOMA')&&v.speed>1) v.status='arriving';
-    else if(v.speed>1) v.status=(v.heading>90&&v.heading<270)?'departing':'arriving';
+    const p=msg.Message.PositionReport;
+    v.speed=Math.round(p.Sog*10)/10;
+    v.heading=p.Cog;
+    v.navStatus=p.NavigationalStatus;
   }
-  renderVessels(); updateMapMarkers();
+  v.status = inferStatus(v);
+  scheduleRender();
 }
 function typeFromCode(c){ if(!c)return'Vessel'; if(c>=70&&c<=79)return'Container'; if(c>=80&&c<=89)return'Tanker'; if(c>=60&&c<=69)return'Passenger'; return'Bulk'; }
 function flagFromMMSI(m){ const f={'338':'🇺🇸','316':'🇨🇦','477':'🇭🇰','352':'🇵🇦','374':'🇵🇦','215':'🇲🇹','440':'🇰🇷','441':'🇰🇷','412':'🇨🇳','413':'🇨🇳','431':'🇯🇵','432':'🇯🇵','566':'🇸🇬'}; return f[m.substring(0,3)]||'🌐'; }
