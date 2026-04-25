@@ -162,7 +162,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.4</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.5</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -599,7 +599,7 @@ function connectAIS() {
     dot.className='conn-dot live'; lbl.textContent='Live AIS feed';
     document.getElementById('apiBanner').style.display='none';
   };
-  wsConn.onmessage = evt=>{ try{ processAIS(JSON.parse(evt.data)); }catch(e){} };
+  wsConn.onmessage = async evt=>{ try{ const txt = evt.data instanceof Blob ? await evt.data.text() : evt.data; processAIS(JSON.parse(txt)); }catch(e){ console.error('AIS parse error:',e); } };
   wsConn.onerror   = ()=>{ dot.style.background='#dc2626'; lbl.textContent='Connection error'; };
   wsConn.onclose   = ()=>{ if(aisKey) setTimeout(connectAIS,5000); };
 }
