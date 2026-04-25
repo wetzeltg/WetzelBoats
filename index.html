@@ -48,10 +48,11 @@
   .settings-btn:hover{background:var(--border);color:var(--text)}
 
   /* PANELS */
-  .panel{overflow-y:auto;overflow-x:hidden;background:var(--surface);border-right:1px solid var(--border)}
+  .panel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border-right:1px solid var(--border)}
   .panel:last-child{border-right:none;border-left:1px solid var(--border)}
-  .panel::-webkit-scrollbar{width:4px}
-  .panel::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  .panel-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
+  .panel-scroll::-webkit-scrollbar{width:4px}
+  .panel-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
   .panel-header{position:sticky;top:0;z-index:10;padding:11px 14px 9px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
   .panel-title{font-size:10px;font-weight:600;letter-spacing:0.09em;color:var(--muted);text-transform:uppercase}
   .panel-count{font-size:10px;font-family:var(--mono);color:var(--dim);background:var(--bg);padding:2px 7px;border-radius:10px;border:1px solid var(--border)}
@@ -163,7 +164,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v2.1</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v2.2</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -176,13 +177,15 @@
       <div class="stat-cell"><div class="stat-n teal"  id="s-total">9</div><div class="stat-l">In sound</div></div>
       <div class="stat-cell" style="border-right:none"><div class="stat-n" style="color:var(--purple)" id="s-anch">0</div><div class="stat-l">Anchored</div></div>
     </div>
-    <div id="debugWrap" style="border-bottom:1px solid var(--border);">
-      <div onclick="toggleDebug()" style="padding:5px 14px;font-size:10px;font-family:var(--mono);color:var(--dim);cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);">
-        <span>🔧 Debug info</span><span id="debugArrow">▼ show</span>
+    <div class="panel-scroll">
+      <div id="debugWrap" style="border-bottom:1px solid var(--border);">
+        <div onclick="toggleDebug()" style="padding:5px 14px;font-size:10px;font-family:var(--mono);color:var(--dim);cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);">
+          <span>🔧 Debug info</span><span id="debugArrow">▼ show</span>
+        </div>
+        <div id="debugPanel" style="font-size:10px;font-family:monospace;padding:8px 12px;background:#fffbeb;color:#92400e;display:none;max-height:220px;overflow-y:auto;"></div>
       </div>
-      <div id="debugPanel" style="font-size:10px;font-family:monospace;padding:8px 12px;background:#fffbeb;color:#92400e;display:none;max-height:220px;overflow-y:auto;"></div>
+      <div id="vesselList"></div>
     </div>
-    <div id="vesselList"></div>
   </div>
 
   <div class="map-wrap">
@@ -420,12 +423,9 @@ function highlightVessel(mmsi) {
   if (v && mapMarkers[mmsi]) {
     mapMarkers[mmsi].setIcon(makeShipIcon(v.status, true));
   }
-  // Highlight card
+  // Highlight card (no auto-scroll on hover - only highlight visually)
   const card = document.querySelector(`.ship-card[data-mmsi="${mmsi}"]`);
-  if (card) {
-    card.classList.add('highlighted');
-    card.scrollIntoView({ behavior:'smooth', block:'nearest' });
-  }
+  if (card) card.classList.add('highlighted');
 }
 
 function highlightWhale(idx) {
@@ -454,8 +454,15 @@ function highlightWhale(idx) {
 // ═══════════════════════════════════════
 // RENDER VESSELS
 // ═══════════════════════════════════════
+function distFromHome(v) {
+  if (!v.lat || !v.lng) return 9999;
+  const dlat = v.lat - HOME_LAT;
+  const dlng = (v.lng - HOME_LNG) * Math.cos(HOME_LAT * Math.PI/180);
+  return Math.sqrt(dlat*dlat + dlng*dlng);
+}
+
 function renderVessels() {
-  const arr = Object.values(vessels);
+  const arr = Object.values(vessels).sort((a,b) => distFromHome(a) - distFromHome(b));
   const arriving  = arr.filter(v=>v.status==='arriving');
   const departing = arr.filter(v=>v.status==='departing');
   const inport    = arr.filter(v=>v.status==='inport');
@@ -483,35 +490,46 @@ function renderVessels() {
 
 function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
+// Track MMSIs with no photo so we don't keep retrying
+const noPhotoMMSI = new Set();
+
+function handlePhotoError(el, mmsi, shipType) {
+  noPhotoMMSI.add(mmsi);
+  const wrap = el.closest('.ship-photo-wrap');
+  if (!wrap) return;
+  const badge = wrap.querySelector('.photo-badge');
+  const badgeHTML = badge ? badge.outerHTML : '';
+  const ph = document.createElement('div');
+  ph.className = 'photo-placeholder';
+  ph.innerHTML = shipSVG(shipType) + '<div class="ship-type-label">' + (shipType||'Vessel') + '</div>';
+  wrap.innerHTML = '';
+  wrap.appendChild(ph);
+  if (badge) wrap.insertAdjacentHTML('beforeend', badgeHTML);
+}
+
 function cardHTML(v) {
   const bc = {arriving:'arr',departing:'dep',inport:'port',anchored:'anch'}[v.status]||'anch';
   const bl = {arriving:'ARRIVING',departing:'DEPARTING',inport:'IN PORT',anchored:'ANCHORED'}[v.status]||'IN AREA';
   const fromTo    = v.status==='departing'?'Destination':'From';
-  const fromToVal = v.status==='departing'?(v.destination||v.origin||'—'):(v.origin||v.destination||'—');
+  const fromToVal = v.status==='departing'?(v.destination||v.origin||'\u2014'):(v.origin||v.destination||'\u2014');
   const etaLbl    = v.status==='inport'?'Arrived':(v.status==='departing'?'Speed':'ETA / Speed');
-  const etaVal    = v.status==='inport'?(v.arrivedAgo||'—'):(v.eta?v.eta+(v.speed?' · '+v.speed+' kn':''):(v.speed!=null?v.speed+' kn':'—'));
-  const svgEsc    = esc(shipSVG(v.shipType));
-  const typeEsc   = esc(v.shipType||'Vessel');
-
-  return `<div class="ship-card ${v.status}" data-mmsi="${v.mmsi}"
-    onclick="focusVessel('${v.mmsi}')"
-    onmouseenter="highlightVessel('${v.mmsi}')"
-    onmouseleave="highlightVessel(null)">
-    <div class="ship-photo-wrap">
-      <img class="ship-photo" src="${getPhotoUrl(v.mmsi)}" alt="${esc(v.name)}"
-        onerror="var w=this.parentNode;var b=w.querySelector('.photo-badge').outerHTML;w.innerHTML='<div class=\\'photo-placeholder\\'>${svgEsc}<div class=\\'ship-type-label\\'>${typeEsc}</div></div>'+b;">
-      <div class="photo-badge ${bc}">${bl}</div>
-    </div>
-    <div class="ship-body">
-      <div class="ship-name">${v.name}</div>
-      <div class="ship-meta">
-        <div class="ship-kv"><div class="ship-k">Type</div><div class="ship-v">${v.shipType||'Vessel'}</div></div>
-        <div class="ship-kv"><div class="ship-k">Flag</div><div class="ship-v">${v.flag||flagFromMMSI(v.mmsi)}</div></div>
-        <div class="ship-kv"><div class="ship-k">${fromTo}</div><div class="ship-v hi">${fromToVal}</div></div>
-        <div class="ship-kv"><div class="ship-k">${etaLbl}</div><div class="ship-v hi">${etaVal}</div></div>
-      </div>
-    </div>
-  </div>`;
+  const etaVal    = v.status==='inport'?(v.arrivedAgo||'\u2014'):(v.eta?v.eta+(v.speed?' \u00b7 '+v.speed+' kn':''):(v.speed!=null?v.speed+' kn':'\u2014'));
+  const photoHTML = noPhotoMMSI.has(v.mmsi)
+    ? '<div class="photo-placeholder">'+shipSVG(v.shipType)+'<div class="ship-type-label">'+(v.shipType||'Vessel')+'</div></div>'
+    : '<img class="ship-photo" src="'+getPhotoUrl(v.mmsi)+'" alt="'+esc(v.name)+'" onerror="handlePhotoError(this,\''+v.mmsi+'\',\''+esc(v.shipType||'')+'\')">';
+  return '<div class="ship-card '+v.status+'" data-mmsi="'+v.mmsi+'"'
+    +' onclick="focusVessel(\''+v.mmsi+'\')"'
+    +' onmouseenter="highlightVessel(\''+v.mmsi+'\')"'
+    +' onmouseleave="highlightVessel(null)">'
+    +'<div class="ship-photo-wrap">'+photoHTML+'<div class="photo-badge '+bc+'">'+bl+'</div></div>'
+    +'<div class="ship-body">'
+    +'<div class="ship-name">'+v.name+'</div>'
+    +'<div class="ship-meta">'
+    +'<div class="ship-kv"><div class="ship-k">Type</div><div class="ship-v">'+(v.shipType||'Vessel')+'</div></div>'
+    +'<div class="ship-kv"><div class="ship-k">Flag</div><div class="ship-v">'+(v.flag||flagFromMMSI(v.mmsi))+'</div></div>'
+    +'<div class="ship-kv"><div class="ship-k">'+fromTo+'</div><div class="ship-v hi">'+fromToVal+'</div></div>'
+    +'<div class="ship-kv"><div class="ship-k">'+etaLbl+'</div><div class="ship-v hi">'+etaVal+'</div></div>'
+    +'</div></div></div>';
 }
 
 function focusVessel(mmsi) {
@@ -631,7 +649,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v2.1 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v2.2 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
