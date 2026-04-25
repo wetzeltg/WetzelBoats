@@ -163,7 +163,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.8</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.9</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -454,7 +454,7 @@ function renderVessels() {
   const arriving  = arr.filter(v=>v.status==='arriving');
   const departing = arr.filter(v=>v.status==='departing');
   const inport    = arr.filter(v=>v.status==='inport');
-  const unknown   = arr.filter(v=>!v.status||!['arriving','departing','inport'].includes(v.status));
+  const unknown   = arr.filter(v=>!v.status||!['arriving','departing','inport','anchored'].includes(v.status));
 
   const anchored = arr.filter(v=>v.status==='anchored');
   document.getElementById('s-arr').textContent    = arriving.length;
@@ -467,8 +467,6 @@ function renderVessels() {
   // Show debug panel whenever we have live data
   const dbg = document.getElementById('debugPanel');
   if (arr.length > 0 && aisKey) dbg.style.display = 'block';
-
-  const anchored = arr.filter(v=>v.status==='anchored');
 
   let html = '';
   if (arriving.length)  { html+=`<div class="section-label">▲ Approaching Tacoma</div>`; arriving.forEach(v=>html+=cardHTML(v)); }
@@ -622,7 +620,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v1.8 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v1.9 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
