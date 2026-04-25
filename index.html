@@ -164,7 +164,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v2.2</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v2.3</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -423,9 +423,12 @@ function highlightVessel(mmsi) {
   if (v && mapMarkers[mmsi]) {
     mapMarkers[mmsi].setIcon(makeShipIcon(v.status, true));
   }
-  // Highlight card (no auto-scroll on hover - only highlight visually)
+  // Highlight card and scroll it into view
   const card = document.querySelector(`.ship-card[data-mmsi="${mmsi}"]`);
-  if (card) card.classList.add('highlighted');
+  if (card) {
+    card.classList.add('highlighted');
+    card.scrollIntoView({ behavior:'smooth', block:'nearest' });
+  }
 }
 
 function highlightWhale(idx) {
@@ -478,12 +481,13 @@ function renderVessels() {
 
   // Update debug content but don't auto-show
 
+  // Single unified list sorted by distance from home
+  const allSorted = arr.filter(v=>['arriving','departing','inport','anchored'].includes(v.status));
+  unknown.forEach(v=>{ v.status='arriving'; allSorted.push(v); });
+  allSorted.sort((a,b)=>distFromHome(a)-distFromHome(b));
+
   let html = '';
-  if (arriving.length)  { html+=`<div class="section-label">▲ Approaching Tacoma</div>`; arriving.forEach(v=>html+=cardHTML(v)); }
-  if (departing.length) { html+=`<div class="section-label">▼ Departing</div>`;           departing.forEach(v=>html+=cardHTML(v)); }
-  if (inport.length)    { html+=`<div class="section-label">⚓ In Port · Tacoma</div>`;   inport.forEach(v=>html+=cardHTML(v)); }
-  if (anchored.length)  { html+=`<div class="section-label">⚓ Anchored / Waiting</div>`; anchored.forEach(v=>html+=cardHTML(v)); }
-  if (unknown.length)   { unknown.forEach(v=>{ v.status='arriving'; }); }
+  allSorted.forEach(v=>html+=cardHTML(v));
   if (!html) html = `<div style="padding:20px 14px;font-size:12px;color:var(--dim);">Waiting for vessel data...</div>`;
   document.getElementById('vesselList').innerHTML = html;
 }
@@ -649,7 +653,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v2.2 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v2.3 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
