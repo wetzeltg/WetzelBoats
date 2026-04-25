@@ -163,7 +163,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.9</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v2.0</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -176,7 +176,12 @@
       <div class="stat-cell"><div class="stat-n teal"  id="s-total">9</div><div class="stat-l">In sound</div></div>
       <div class="stat-cell" style="border-right:none"><div class="stat-n" style="color:var(--purple)" id="s-anch">0</div><div class="stat-l">Anchored</div></div>
     </div>
-    <div id="debugPanel" style="font-size:10px;font-family:monospace;padding:8px 12px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;display:none;"></div>
+    <div id="debugWrap" style="border-bottom:1px solid var(--border);">
+      <div onclick="toggleDebug()" style="padding:5px 14px;font-size:10px;font-family:var(--mono);color:var(--dim);cursor:pointer;display:flex;justify-content:space-between;align-items:center;background:var(--surface2);">
+        <span>🔧 Debug info</span><span id="debugArrow">▼ show</span>
+      </div>
+      <div id="debugPanel" style="font-size:10px;font-family:monospace;padding:8px 12px;background:#fffbeb;color:#92400e;display:none;max-height:220px;overflow-y:auto;"></div>
+    </div>
     <div id="vesselList"></div>
   </div>
 
@@ -248,9 +253,9 @@ let whaleMapMarkers = [];  // [ { marker, el, idx } ]
 const HOME_LAT = 47.3012;
 const HOME_LNG = -122.3892;
 
-// Map center: slightly NW of home to show water, home ends up lower-right
-const MAP_CENTER = [47.42, -122.52];
-const MAP_ZOOM   = 12;
+// Map center: matches screenshot view showing full southern Sound
+const MAP_CENTER = [47.48, -122.42];
+const MAP_ZOOM   = 10;
 
 // ═══════════════════════════════════════
 // MAP SETUP
@@ -464,9 +469,7 @@ function renderVessels() {
   document.getElementById('s-total').textContent  = arr.length;
   document.getElementById('hd-vessels').textContent = arr.length;
 
-  // Show debug panel whenever we have live data
-  const dbg = document.getElementById('debugPanel');
-  if (arr.length > 0 && aisKey) dbg.style.display = 'block';
+  // Update debug content but don't auto-show
 
   let html = '';
   if (arriving.length)  { html+=`<div class="section-label">▲ Approaching Tacoma</div>`; arriving.forEach(v=>html+=cardHTML(v)); }
@@ -616,11 +619,19 @@ function scheduleRender() {
   renderTimer = setTimeout(()=>{ renderTimer=null; renderVessels(); updateMapMarkers(); updateDebug(); }, 1000);
 }
 
+function toggleDebug() {
+  const panel = document.getElementById('debugPanel');
+  const arrow = document.getElementById('debugArrow');
+  const isHidden = panel.style.display === 'none';
+  panel.style.display = isHidden ? 'block' : 'none';
+  arrow.textContent = isHidden ? '▲ hide' : '▼ show';
+}
+
 function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v1.9 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v2.0 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
