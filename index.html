@@ -57,7 +57,7 @@
   .panel-count{font-size:10px;font-family:var(--mono);color:var(--dim);background:var(--bg);padding:2px 7px;border-radius:10px;border:1px solid var(--border)}
 
   /* STATS */
-  .stats-strip{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--border)}
+  .stats-strip{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--border)}
   .stat-cell{padding:10px 8px;text-align:center;border-right:1px solid var(--border);background:var(--surface2)}
   .stat-cell:last-child{border-right:none}
   .stat-n{font-size:20px;font-weight:600;line-height:1}
@@ -74,6 +74,7 @@
   .ship-card.highlighted.arriving{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-border),var(--shadow-md)}
   .ship-card.highlighted.departing{border-color:var(--green);box-shadow:0 0 0 2px var(--green-border),var(--shadow-md)}
   .ship-card.highlighted.inport{border-color:var(--amber);box-shadow:0 0 0 2px var(--amber-border),var(--shadow-md)}
+  .ship-card.highlighted.anchored{border-color:var(--purple);box-shadow:0 0 0 2px var(--purple-border),var(--shadow-md)}
 
   .ship-photo-wrap{position:relative}
   .ship-photo{width:100%;height:96px;object-fit:cover;display:block;background:var(--bg)}
@@ -162,7 +163,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.7</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.8</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -173,6 +174,7 @@
       <div class="stat-cell"><div class="stat-n green" id="s-dep">2</div><div class="stat-l">Departing</div></div>
       <div class="stat-cell"><div class="stat-n amber" id="s-port">3</div><div class="stat-l">In port</div></div>
       <div class="stat-cell"><div class="stat-n teal"  id="s-total">9</div><div class="stat-l">In sound</div></div>
+      <div class="stat-cell" style="border-right:none"><div class="stat-n" style="color:var(--purple)" id="s-anch">0</div><div class="stat-l">Anchored</div></div>
     </div>
     <div id="debugPanel" style="font-size:10px;font-family:monospace;padding:8px 12px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#92400e;display:none;"></div>
     <div id="vesselList"></div>
@@ -185,6 +187,7 @@
       <div class="leg-row"><div class="leg-dot" style="background:#2563eb"></div>Approaching</div>
       <div class="leg-row"><div class="leg-dot" style="background:#16a34a"></div>Departing</div>
       <div class="leg-row"><div class="leg-dot" style="background:#b45309"></div>In port</div>
+      <div class="leg-row"><div class="leg-dot" style="background:#7c3aed"></div>Anchored</div>
       <div class="leg-row"><div class="leg-dot" style="background:#6b7280;border-radius:50%"></div>Gray whale</div>
       <div class="leg-row"><div class="leg-dot" style="background:#111;border-radius:50%"></div>Orca</div>
     </div>
@@ -282,6 +285,7 @@ function makeShipIcon(status, highlighted) {
     arriving: { hull:'#1d4ed8', deck:'#3b82f6', cabin:'#93c5fd', wake:'rgba(147,197,253,0.4)' },
     departing:{ hull:'#15803d', deck:'#22c55e', cabin:'#86efac', wake:'rgba(134,239,172,0.4)' },
     inport:   { hull:'#92400e', deck:'#d97706', cabin:'#fcd34d', wake:'rgba(252,211,77,0.4)'  },
+    anchored: { hull:'#5b21b6', deck:'#7c3aed', cabin:'#c4b5fd', wake:'rgba(196,181,253,0.4)' },
   };
   const c = colors[status] || colors.inport;
   const glow = highlighted ? `filter="url(#glow)"` : '';
@@ -452,9 +456,11 @@ function renderVessels() {
   const inport    = arr.filter(v=>v.status==='inport');
   const unknown   = arr.filter(v=>!v.status||!['arriving','departing','inport'].includes(v.status));
 
+  const anchored = arr.filter(v=>v.status==='anchored');
   document.getElementById('s-arr').textContent    = arriving.length;
   document.getElementById('s-dep').textContent    = departing.length;
   document.getElementById('s-port').textContent   = inport.length;
+  document.getElementById('s-anch').textContent   = anchored.length;
   document.getElementById('s-total').textContent  = arr.length;
   document.getElementById('hd-vessels').textContent = arr.length;
 
@@ -462,11 +468,14 @@ function renderVessels() {
   const dbg = document.getElementById('debugPanel');
   if (arr.length > 0 && aisKey) dbg.style.display = 'block';
 
+  const anchored = arr.filter(v=>v.status==='anchored');
+
   let html = '';
   if (arriving.length)  { html+=`<div class="section-label">▲ Approaching Tacoma</div>`; arriving.forEach(v=>html+=cardHTML(v)); }
   if (departing.length) { html+=`<div class="section-label">▼ Departing</div>`;           departing.forEach(v=>html+=cardHTML(v)); }
-  if (inport.length)    { html+=`<div class="section-label">⚓ In Port</div>`;             inport.forEach(v=>html+=cardHTML(v)); }
-  if (unknown.length)   { html+=`<div class="section-label">? Unknown status</div>`;      unknown.forEach(v=>{ v.status='arriving'; html+=cardHTML(v); }); }
+  if (inport.length)    { html+=`<div class="section-label">⚓ In Port · Tacoma</div>`;   inport.forEach(v=>html+=cardHTML(v)); }
+  if (anchored.length)  { html+=`<div class="section-label">⚓ Anchored / Waiting</div>`; anchored.forEach(v=>html+=cardHTML(v)); }
+  if (unknown.length)   { unknown.forEach(v=>{ v.status='arriving'; }); }
   if (!html) html = `<div style="padding:20px 14px;font-size:12px;color:var(--dim);">Waiting for vessel data...</div>`;
   document.getElementById('vesselList').innerHTML = html;
 }
@@ -474,8 +483,8 @@ function renderVessels() {
 function esc(s) { return (s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
 
 function cardHTML(v) {
-  const bc = {arriving:'arr',departing:'dep',inport:'port'}[v.status];
-  const bl = {arriving:'ARRIVING',departing:'DEPARTING',inport:'IN PORT'}[v.status];
+  const bc = {arriving:'arr',departing:'dep',inport:'port',anchored:'anch'}[v.status]||'anch';
+  const bl = {arriving:'ARRIVING',departing:'DEPARTING',inport:'IN PORT',anchored:'ANCHORED'}[v.status]||'IN AREA';
   const fromTo    = v.status==='departing'?'Destination':'From';
   const fromToVal = v.status==='departing'?(v.destination||v.origin||'—'):(v.origin||v.destination||'—');
   const etaLbl    = v.status==='inport'?'Arrived':(v.status==='departing'?'Speed':'ETA / Speed');
@@ -595,7 +604,7 @@ function connectAIS() {
   dot.className='conn-dot'; lbl.textContent='Connecting...';
   wsConn = new WebSocket('wss://stream.aisstream.io/v0/stream');
   wsConn.onopen = ()=>{
-    wsConn.send(JSON.stringify({APIKey:aisKey,BoundingBoxes:[[[46.8,-122.9],[48.5,-122.1]]],FilterMessageTypes:['PositionReport','ShipStaticData']}));
+    wsConn.send(JSON.stringify({APIKey:aisKey,BoundingBoxes:[[[47.0,-122.8],[47.7,-122.2]]],FilterMessageTypes:['PositionReport','ShipStaticData']}));
     dot.className='conn-dot live'; lbl.textContent='Live AIS feed';
     document.getElementById('apiBanner').style.display='none';
   };
@@ -613,20 +622,39 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v1.7 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v1.8 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
+// Port of Tacoma terminal area bounding box
+function isInPortArea(lat, lng) {
+  return lat > 47.24 && lat < 47.30 && lng > -122.44 && lng < -122.38;
+}
+
 function inferStatus(v) {
-  if (v.navStatus===1||v.navStatus===5) return 'inport';
-  if (v.speed !== undefined && v.speed < 0.5) return 'inport';
+  // Moored or at anchor by nav status
+  if (v.navStatus === 1 || v.navStatus === 5) {
+    return isInPortArea(v.lat, v.lng) ? 'inport' : 'anchored';
+  }
+  // Physically inside port terminal and slow
+  if (v.speed !== undefined && v.speed < 1.0 && isInPortArea(v.lat, v.lng)) return 'inport';
+  // Underway - use destination to determine direction
   if (v.destination) {
     const d = v.destination.toUpperCase();
-    if (d.includes('TACOMA')||d.includes('TAC')||d.includes('SEATTLE')||d.includes('SEA')) return 'arriving';
+    if (d.includes('TACOMA') || d.includes('TAC')) return 'arriving';
+    if (d.includes('SEATTLE') || d.includes('SEA') ||
+        d.includes('PORT ANGELES') || d.includes('VICTORIA') ||
+        d.includes('VANCOUVER') || d.includes('KODIAK') ||
+        d.includes('US TIW') || d.includes('CA VAN')) return 'departing';
   }
+  // Fall back to heading: southbound = arriving at Tacoma, northbound = departing
   if (v.heading !== undefined) {
-    return (v.heading >= 135 && v.heading <= 225) ? 'arriving' : 'departing';
+    if (v.heading >= 150 && v.heading <= 210) return 'arriving';
+    if (v.heading >= 0   && v.heading <= 30)  return 'departing';
+    if (v.heading >= 330 && v.heading <= 360) return 'departing';
   }
+  // Slow moving but not in port = anchored/waiting
+  if (v.speed !== undefined && v.speed < 1.0) return 'inport';
   return 'arriving';
 }
 
