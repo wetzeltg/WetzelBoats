@@ -162,7 +162,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.5</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v1.7</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -477,9 +477,9 @@ function cardHTML(v) {
   const bc = {arriving:'arr',departing:'dep',inport:'port'}[v.status];
   const bl = {arriving:'ARRIVING',departing:'DEPARTING',inport:'IN PORT'}[v.status];
   const fromTo    = v.status==='departing'?'Destination':'From';
-  const fromToVal = v.status==='departing'?(v.destination||'—'):(v.origin||'—');
+  const fromToVal = v.status==='departing'?(v.destination||v.origin||'—'):(v.origin||v.destination||'—');
   const etaLbl    = v.status==='inport'?'Arrived':(v.status==='departing'?'Speed':'ETA / Speed');
-  const etaVal    = v.status==='inport'?(v.arrivedAgo||'—'):(v.eta?v.eta+(v.speed?' · '+v.speed+' kn':''):(v.speed?v.speed+' kn':'—'));
+  const etaVal    = v.status==='inport'?(v.arrivedAgo||'—'):(v.eta?v.eta+(v.speed?' · '+v.speed+' kn':''):(v.speed!=null?v.speed+' kn':'—'));
   const svgEsc    = esc(shipSVG(v.shipType));
   const typeEsc   = esc(v.shipType||'Vessel');
 
@@ -495,8 +495,8 @@ function cardHTML(v) {
     <div class="ship-body">
       <div class="ship-name">${v.name}</div>
       <div class="ship-meta">
-        <div class="ship-kv"><div class="ship-k">Type</div><div class="ship-v">${v.shipType||'—'}</div></div>
-        <div class="ship-kv"><div class="ship-k">Flag</div><div class="ship-v">${v.flag||'—'}</div></div>
+        <div class="ship-kv"><div class="ship-k">Type</div><div class="ship-v">${v.shipType||'Vessel'}</div></div>
+        <div class="ship-kv"><div class="ship-k">Flag</div><div class="ship-v">${v.flag||flagFromMMSI(v.mmsi)}</div></div>
         <div class="ship-kv"><div class="ship-k">${fromTo}</div><div class="ship-v hi">${fromToVal}</div></div>
         <div class="ship-kv"><div class="ship-k">${etaLbl}</div><div class="ship-v hi">${etaVal}</div></div>
       </div>
@@ -613,8 +613,8 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>Live vessels received: '+arr.length+'</strong><br>' +
-    arr.map(v=>`${v.name||v.mmsi} | status:${v.status||'?'} | spd:${v.speed??'?'} | nav:${v.navStatus??'?'} | dest:${v.destination||'?'}`).join('<br>');
+  el.innerHTML = '<strong>v1.7 · Live vessels: '+arr.length+'</strong><br>' +
+    arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
 function inferStatus(v) {
@@ -650,17 +650,137 @@ function processAIS(msg) {
     v.navStatus=p.NavigationalStatus;
   }
   v.status = inferStatus(v);
+  // Try to enrich with extra vessel details if we're missing info
+  if (!v.origin || !v.shipType) enrichVessel(v.mmsi);
   scheduleRender();
 }
-function typeFromCode(c){ if(!c)return'Vessel'; if(c>=70&&c<=79)return'Container'; if(c>=80&&c<=89)return'Tanker'; if(c>=60&&c<=69)return'Passenger'; return'Bulk'; }
-function flagFromMMSI(m){ const f={'338':'🇺🇸','316':'🇨🇦','477':'🇭🇰','352':'🇵🇦','374':'🇵🇦','215':'🇲🇹','440':'🇰🇷','441':'🇰🇷','412':'🇨🇳','413':'🇨🇳','431':'🇯🇵','432':'🇯🇵','566':'🇸🇬'}; return f[m.substring(0,3)]||'🌐'; }
+function typeFromCode(c){
+  if(!c) return null;
+  if(c>=70&&c<=79) return 'Container';
+  if(c>=80&&c<=89) return 'Tanker';
+  if(c>=60&&c<=69) return 'Passenger';
+  if(c>=30&&c<=39) return 'Fishing';
+  if(c===52)       return 'Tug';
+  if(c>=20&&c<=29) return 'WIG';
+  return 'Cargo';
+}
+
+// MID (Maritime ID) → flag emoji + country
+const MID_FLAGS = {
+  '201':'🇦🇱','202':'🇦🇩','203':'🇦🇹','204':'🇵🇹','205':'🇧🇪','206':'🇧🇾','207':'🇧🇬','208':'🇻🇦',
+  '209':'🇨🇾','210':'🇨🇾','211':'🇩🇪','212':'🇨🇾','213':'🇬🇪','214':'🇲🇩','215':'🇲🇹','216':'🇦🇲',
+  '219':'🇩🇰','220':'🇩🇰','224':'🇪🇸','225':'🇪🇸','226':'🇫🇷','227':'🇫🇷','228':'🇫🇷','229':'🇲🇹',
+  '230':'🇫🇮','231':'🇫🇴','232':'🇬🇧','233':'🇬🇧','234':'🇬🇧','235':'🇬🇧','236':'🇬🇮','237':'🇬🇷',
+  '238':'🇭🇷','239':'🇬🇷','240':'🇬🇷','241':'🇬🇷','242':'🇲🇦','243':'🇭🇺','244':'🇳🇱','245':'🇳🇱',
+  '246':'🇳🇱','247':'🇮🇹','248':'🇲🇹','249':'🇲🇹','250':'🇮🇪','251':'🇮🇸','252':'🇱🇮','253':'🇱🇺',
+  '254':'🇲🇨','255':'🇵🇹','256':'🇲🇹','257':'🇳🇴','258':'🇳🇴','259':'🇳🇴','261':'🇵🇱','262':'🇲🇪',
+  '263':'🇵🇹','264':'🇷🇴','265':'🇸🇪','266':'🇸🇪','267':'🇸🇰','268':'🇸🇲','269':'🇨🇭','270':'🇨🇿',
+  '271':'🇹🇷','272':'🇺🇦','273':'🇷🇺','274':'🇲🇰','275':'🇱🇻','276':'🇪🇪','277':'🇱🇹','278':'🇸🇮',
+  '279':'🇷🇸','301':'🇦🇮','303':'🇺🇸','304':'🇦🇬','305':'🇦🇬','306':'🇨🇼','307':'🇦🇼','308':'🇧🇸',
+  '309':'🇧🇸','310':'🇧🇲','311':'🇧🇸','312':'🇧🇿','314':'🇧🇧','316':'🇨🇦','319':'🇰🇾','321':'🇨🇷',
+  '323':'🇨🇺','325':'🇩🇲','327':'🇩🇴','329':'🇬🇵','330':'🇬🇩','331':'🇬🇱','332':'🇬🇹','334':'🇭🇳',
+  '336':'🇯🇲','338':'🇺🇸','339':'🇲🇽','341':'🇲🇸','343':'🇳🇮','345':'🇵🇦','347':'🇵🇦','348':'🇵🇦',
+  '350':'🇵🇦','351':'🇵🇦','352':'🇵🇦','353':'🇵🇦','354':'🇵🇦','355':'🇵🇦','356':'🇵🇦','357':'🇵🇦',
+  '358':'🇵🇷','359':'🇸🇻','361':'🇰🇳','362':'🇹🇹','364':'🇹🇨','366':'🇺🇸','367':'🇺🇸','368':'🇺🇸',
+  '369':'🇺🇸','370':'🇵🇦','371':'🇵🇦','372':'🇵🇦','373':'🇵🇦','374':'🇵🇦','375':'🇻🇨','376':'🇻🇮',
+  '377':'🇻🇨','378':'🇻🇬','379':'🇻🇮','401':'🇦🇫','403':'🇸🇦','405':'🇧🇩','408':'🇧🇭','410':'🇧🇭',
+  '412':'🇨🇳','413':'🇨🇳','414':'🇨🇳','416':'🇹🇼','417':'🇱🇰','419':'🇮🇳','422':'🇮🇷','423':'🇦🇿',
+  '425':'🇮🇶','428':'🇮🇱','431':'🇯🇵','432':'🇯🇵','434':'🇹🇲','436':'🇰🇿','437':'🇺🇿','438':'🇯🇴',
+  '440':'🇰🇷','441':'🇰🇷','443':'🇵🇸','445':'🇰🇵','447':'🇰🇼','450':'🇱🇧','451':'🇰🇾','453':'🇲🇴',
+  '455':'🇲🇻','457':'🇲🇳','459':'🇳🇵','461':'🇴🇲','463':'🇵🇰','466':'🇶🇦','468':'🇸🇾','470':'🇦🇪',
+  '472':'🇹🇯','473':'🇾🇪','477':'🇭🇰','478':'🇧🇦','501':'🇦🇶','503':'🇦🇺','506':'🇲🇾','508':'🇳🇷',
+  '510':'🇲🇭','511':'🇲🇾','512':'🇳🇿','514':'🇧🇩','515':'🇧🇩','516':'🇨🇽','518':'🇨🇰','520':'🇫🇯',
+  '523':'🇨🇨','525':'🇮🇩','529':'🇰🇮','531':'🇱🇦','533':'🇲🇾','536':'🇲🇵','538':'🇲🇭','540':'🇳🇨',
+  '542':'🇳🇿','544':'🇳🇺','546':'🇫🇷','548':'🇵🇼','553':'🇵🇬','555':'🇵🇳','557':'🇸🇧','559':'🇼🇸',
+  '561':'🇸🇦','563':'🇸🇬','564':'🇸🇬','565':'🇸🇬','566':'🇸🇬','567':'🇹🇭','570':'🇹🇴','572':'🇹🇻',
+  '574':'🇻🇳','576':'🇻🇺','577':'🇼🇫','578':'🇼🇸','601':'🇿🇦','603':'🇦🇴','605':'🇩🇿','607':'🇸🇭',
+  '608':'🇧🇮','609':'🇧🇯','610':'🇧🇼','611':'🇧🇫','612':'🇨🇲','613':'🇨🇻','615':'🇨🇫','616':'🇰🇲',
+  '617':'🇨🇬','618':'🇦🇶','619':'🇨🇮','620':'🇰🇲','621':'🇩🇯','622':'🇪🇬','624':'🇪🇹','625':'🇪🇷',
+  '626':'🇬🇦','627':'🇬🇭','629':'🇬🇲','630':'🇬🇼','631':'🇬🇶','632':'🇬🇳','633':'🇧🇫','634':'🇰🇪',
+  '635':'🇦🇶','636':'🇱🇷','637':'🇱🇾','642':'🇲🇬','644':'🇲🇼','645':'🇲🇻','647':'🇲🇷','649':'🇲🇺',
+  '650':'🇲🇿','654':'🇳🇦','655':'🇳🇬','656':'🇳🇪','657':'🇸🇴','659':'🇸🇦','660':'🇷🇪','661':'🇸🇳',
+  '662':'🇸🇱','663':'🇸🇴','664':'🇸🇩','665':'🇸🇿','666':'🇸🇩','667':'🇸🇹','668':'🇸🇩','669':'🇸🇴',
+  '670':'🇸🇩','671':'🇸🇩','672':'🇸🇩','701':'🇦🇷','710':'🇧🇷','720':'🇧🇴','725':'🇨🇱','730':'🇨🇴',
+  '735':'🇪🇨','740':'🇫🇰','745':'🇬🇫','750':'🇬🇾','755':'🇵🇾','760':'🇵🇪','765':'🇸🇷','770':'🇺🇾','775':'🇻🇪'
+};
+
+function flagFromMMSI(mmsi) {
+  const mid = mmsi.substring(0,3);
+  return MID_FLAGS[mid] || '🌐';
+}
+
+// Enrich vessel with data from multiple free sources
+const enrichCache = new Set();
+async function enrichVessel(mmsi) {
+  if (enrichCache.has(mmsi)) return;
+  enrichCache.add(mmsi);
+
+  // Try multiple sources in order, stop when we get data
+  await tryVesselFinder(mmsi) || await tryMyShipTracking(mmsi);
+}
+
+async function tryVesselFinder(mmsi) {
+  try {
+    // VesselFinder vessel details via CORS proxy
+    const url = `https://www.vesselfinder.com/api/pub/v1/search?q=${mmsi}&type=mmsi`;
+    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    const v = vessels[mmsi];
+    if (!v || !data?.vessels?.length) return false;
+    const d = data.vessels[0];
+    let changed = false;
+    if (d.type && !v.shipType)     { v.shipType = friendlyType(d.type); changed = true; }
+    if (d.destination && !v.destination) { v.destination = d.destination; changed = true; }
+    if (d.last_port && !v.origin)  { v.origin = d.last_port; changed = true; }
+    if (d.imo && !v.imo)           { v.imo = d.imo; changed = true; }
+    if (changed) scheduleRender();
+    return changed;
+  } catch(e) { return false; }
+}
+
+async function tryMyShipTracking(mmsi) {
+  try {
+    // MyShipTracking public vessel lookup
+    const url = `https://www.myshiptracking.com/requests/vesselInfo.json?mmsi=${mmsi}`;
+    const res = await fetch(`https://corsproxy.io/?${encodeURIComponent(url)}`);
+    if (!res.ok) return false;
+    const data = await res.json();
+    const v = vessels[mmsi];
+    if (!v || !data?.vessel) return false;
+    const d = data.vessel;
+    let changed = false;
+    if (d.type && !v.shipType)    { v.shipType = friendlyType(d.type); changed = true; }
+    if (d.destination && !v.destination) { v.destination = d.destination; changed = true; }
+    if (d.last_port && !v.origin) { v.origin = d.last_port; changed = true; }
+    if (changed) scheduleRender();
+    return changed;
+  } catch(e) { return false; }
+}
+
+function friendlyType(raw) {
+  if (!raw) return null;
+  const r = raw.toString().toLowerCase();
+  if (r.includes('container'))  return 'Container';
+  if (r.includes('tanker'))     return 'Tanker';
+  if (r.includes('bulk'))       return 'Bulk';
+  if (r.includes('passenger'))  return 'Passenger';
+  if (r.includes('tug'))        return 'Tug';
+  if (r.includes('fishing'))    return 'Fishing';
+  if (r.includes('cargo'))      return 'Cargo';
+  if (r.includes('roro')||r.includes('ro-ro')) return 'RoRo';
+  // If it's a numeric AIS type code
+  const n = parseInt(raw);
+  if (!isNaN(n)) return typeFromCode(n);
+  return raw;
+}
 
 // ═══════════════════════════════════════
 // WHALE API
 // ═══════════════════════════════════════
 async function fetchWhales(){
   try{
-    const res=await fetch('https://hotline.whalemuseum.org/api.json?species=orca,humpback,gray+whale,minke&recent=24&limit=20');
+    const res=await fetch('https://hotline.whalemuseum.org/api.json?recent=24&limit=30');
     if(!res.ok) throw new Error();
     const data=await res.json();
     const sp={'orca':'Orca (Killer Whale)','gray whale':'Gray Whale','humpback':'Humpback Whale','minke':'Minke Whale'};
