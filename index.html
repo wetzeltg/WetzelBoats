@@ -125,6 +125,44 @@
   .leg-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0}
   .api-banner{position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:500;background:var(--amber-bg);border:1px solid var(--amber-border);border-radius:8px;padding:7px 14px;font-size:11px;font-family:var(--mono);color:var(--amber);display:none;white-space:nowrap;box-shadow:var(--shadow)}
 
+  /* DADDY COUNTDOWN */
+  .daddy-card{
+    position:absolute;bottom:16px;right:16px;z-index:500;
+    background:rgba(255,255,255,0.96);
+    border:1px solid var(--border2);
+    border-radius:14px;
+    box-shadow:var(--shadow-md);
+    width:200px;
+    overflow:hidden;
+    font-family:var(--font);
+  }
+  .daddy-photo{
+    width:100%;height:110px;object-fit:cover;object-position:top;
+    display:block;background:var(--bg);
+  }
+  .daddy-photo-placeholder{
+    width:100%;height:110px;background:linear-gradient(135deg,#e0f2fe,#bae6fd);
+    display:flex;align-items:center;justify-content:center;
+    font-size:40px;
+  }
+  .daddy-body{padding:10px 12px 12px;}
+  .daddy-state-label{
+    font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+    margin-bottom:4px;
+  }
+  .daddy-state-label.arriving{color:var(--blue)}
+  .daddy-state-label.here{color:var(--green)}
+  .daddy-state-label.away{color:var(--muted)}
+  .daddy-headline{font-size:15px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:5px;}
+  .daddy-countdown{font-size:22px;font-weight:700;color:var(--teal);font-family:var(--mono);line-height:1;margin-bottom:5px;}
+  .daddy-sub{font-size:10px;color:var(--muted);font-family:var(--mono);}
+  .daddy-flight{
+    display:flex;align-items:center;gap:5px;margin-top:7px;
+    font-size:10px;font-family:var(--mono);color:var(--muted);
+    background:var(--surface2);border-radius:6px;padding:5px 8px;
+  }
+  .daddy-flight span{color:var(--text);font-weight:500;}
+
   /* highlighted map icon */
   .icon-highlighted { filter: drop-shadow(0 0 6px rgba(255,200,0,0.9)) drop-shadow(0 0 3px rgba(255,150,0,1)); transform: scale(1.25); transform-origin: center bottom; }
 
@@ -164,7 +202,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.4</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.5</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -191,6 +229,25 @@
   <div class="map-wrap">
     <div id="map"></div>
     <div class="api-banner" id="apiBanner">⚠ Demo mode — click "API Keys" to connect live AIS feed</div>
+
+    <!-- DADDY COUNTDOWN -->
+    <div class="daddy-card" id="daddyCard">
+      <div class="daddy-photo-placeholder" id="daddyPhotoWrap">
+        <!-- Replace src below with your photo URL, e.g. https://wetzeltg.github.io/puget_sound_dashboard/daddy.jpg -->
+        <img id="daddyPhoto" class="daddy-photo" src="" alt="Daddy"
+          onerror="this.style.display='none'" style="display:none">
+        <span id="daddyEmoji">✈️</span>
+      </div>
+      <div class="daddy-body">
+        <div class="daddy-state-label" id="daddyStateLabel">Countdown</div>
+        <div class="daddy-headline" id="daddyHeadline">Daddy lands in...</div>
+        <div class="daddy-countdown" id="daddyCountdown">--d --h --m</div>
+        <div class="daddy-sub" id="daddySub"></div>
+        <div class="daddy-flight" id="daddyFlight">
+          ✈ <span id="daddyFlightNum">--</span>
+        </div>
+      </div>
+    </div>
     <div class="map-overlay">
       <div class="leg-row"><div class="leg-dot" style="background:#2563eb"></div>Approaching</div>
       <div class="leg-row"><div class="leg-dot" style="background:#16a34a"></div>Departing</div>
@@ -608,7 +665,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v3.4 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v3.5 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -880,10 +937,121 @@ function updateClock(){
 }
 
 // ═══════════════════════════════════════
+// DADDY COUNTDOWN
+// ═══════════════════════════════════════
+
+// PHOTO: set this to your photo URL once uploaded to GitHub
+// e.g. 'https://wetzeltg.github.io/puget_sound_dashboard/daddy.jpg'
+const DADDY_PHOTO_URL = '';
+
+// TRAVEL SCHEDULE
+// Each trip: { arrive: Date in Seattle time, depart: Date in Seattle time, arrFlight, depFlight }
+const TRIPS = [
+  {
+    arrive:    new Date('2026-05-01T21:30:00-07:00'),  // May 1 9:30 PM PDT
+    depart:    new Date('2026-05-09T00:00:00-07:00'),  // May 9 (time TBD — set when known)
+    arrFlight: 'AS 1525',
+    depFlight: 'AS 441',
+  },
+  {
+    arrive:    new Date('2026-05-29T00:00:00-07:00'),  // May 29 (time TBD)
+    depart:    new Date('2026-05-31T00:00:00-07:00'),  // May 31 (time TBD)
+    arrFlight: 'AS 427',
+    depFlight: 'AS 394',
+  },
+];
+
+function getDaddyState() {
+  const now = new Date();
+  for (const trip of TRIPS) {
+    if (now < trip.arrive) {
+      // Upcoming arrival
+      const diff = trip.arrive - now;
+      return { state: 'arriving', diff, flight: trip.arrFlight, arrive: trip.arrive };
+    }
+    if (now >= trip.arrive && now < trip.depart) {
+      // Daddy is HERE
+      const diff = trip.depart - now;
+      return { state: 'here', diff, flight: trip.depFlight, depart: trip.depart };
+    }
+  }
+  // Between trips or after all trips
+  return { state: 'away' };
+}
+
+function fmtCountdown(ms) {
+  const totalMins = Math.floor(ms / 60000);
+  const days  = Math.floor(totalMins / 1440);
+  const hours = Math.floor((totalMins % 1440) / 60);
+  const mins  = totalMins % 60;
+  if (days > 0)  return `${days}d ${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m`;
+  return `${mins}m`;
+}
+
+function fmtDateTime(d) {
+  return d.toLocaleString('en-US', {
+    timeZone: 'America/Los_Angeles',
+    month:'short', day:'numeric',
+    hour:'numeric', minute:'2-digit', hour12:true
+  });
+}
+
+function updateDaddy() {
+  const s = getDaddyState();
+  const label    = document.getElementById('daddyStateLabel');
+  const headline = document.getElementById('daddyHeadline');
+  const countdown= document.getElementById('daddyCountdown');
+  const sub      = document.getElementById('daddySub');
+  const flight   = document.getElementById('daddyFlight');
+  const flightNum= document.getElementById('daddyFlightNum');
+  const emoji    = document.getElementById('daddyEmoji');
+
+  // Load photo if URL is set
+  if (DADDY_PHOTO_URL) {
+    const img = document.getElementById('daddyPhoto');
+    img.src = DADDY_PHOTO_URL;
+    img.style.display = 'block';
+    emoji.style.display = 'none';
+  }
+
+  if (s.state === 'arriving') {
+    label.className = 'daddy-state-label arriving';
+    label.textContent = '✈ Daddy is coming!';
+    headline.textContent = 'Daddy lands in...';
+    countdown.textContent = fmtCountdown(s.diff);
+    sub.textContent = fmtDateTime(s.arrive) + ' · SEA';
+    flightNum.textContent = s.flight;
+    flight.style.display = 'flex';
+    emoji.textContent = '✈️';
+
+  } else if (s.state === 'here') {
+    label.className = 'daddy-state-label here';
+    label.textContent = '🏠 Daddy is HOME!';
+    headline.textContent = 'So happy you're here!';
+    countdown.textContent = fmtCountdown(s.diff);
+    sub.textContent = 'Leaves ' + fmtDateTime(s.depart);
+    flightNum.textContent = s.flight;
+    flight.style.display = 'flex';
+    emoji.textContent = '🥳';
+
+  } else {
+    label.className = 'daddy-state-label away';
+    label.textContent = '💙 Miss you Daddy';
+    headline.textContent = 'Next trip coming up!';
+    countdown.textContent = '---';
+    sub.textContent = 'Check back soon';
+    flight.style.display = 'none';
+    emoji.textContent = '💙';
+  }
+}
+
+// ═══════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════
 document.getElementById('aisKeyInput').value = aisKey;
 updateClock(); setInterval(updateClock,15000);
+updateDaddy(); setInterval(updateDaddy, 30000);
 fetchWeather(); setInterval(fetchWeather,600000);
 fetchWhales();  setInterval(fetchWhales,300000);
 if(aisKey){ connectAIS(); } else { loadDemoData(); }
