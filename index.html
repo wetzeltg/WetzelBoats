@@ -3,49 +3,52 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Puget Sound — Port of Tacoma</title>
+<title>WetzelBoats</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
   :root {
-    --bg:#f0f4f8; --surface:#fff; --surface2:#f7f9fc;
-    --border:#e2e8f0; --border2:#cbd5e1;
-    --text:#1e293b; --muted:#64748b; --dim:#94a3b8;
+    --bg:#f5f3ff; --surface:#fff; --surface2:#f8f7ff;
+    --border:#e5e3f5; --border2:#c7c3e8;
+    --text:#1e1b4b; --muted:#6b7280; --dim:#9ca3af;
+    --indigo:#4f46e5; --indigo-dark:#3730a3; --indigo-light:#818cf8;
+    --indigo-bg:#eef2ff; --indigo-border:#c7d2fe;
     --blue:#2563eb; --blue-bg:#eff6ff; --blue-border:#bfdbfe;
     --green:#16a34a; --green-bg:#f0fdf4; --green-border:#bbf7d0;
     --amber:#b45309; --amber-bg:#fffbeb; --amber-border:#fde68a;
     --purple:#7c3aed; --purple-bg:#f5f3ff; --purple-border:#ddd6fe;
-    --teal:#0891b2; --teal-bg:#ecfeff; --red:#dc2626;
-    --font:'DM Sans',sans-serif; --mono:'DM Mono',monospace;
+    --teal:#4f46e5; --teal-bg:#eef2ff; --red:#dc2626;
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    --mono:'SF Mono','Fira Code',monospace;
     --radius:10px;
-    --shadow:0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.05);
-    --shadow-md:0 4px 12px rgba(0,0,0,0.08);
+    --shadow:0 1px 3px rgba(79,70,229,0.08),0 1px 2px rgba(79,70,229,0.05);
+    --shadow-md:0 4px 12px rgba(79,70,229,0.12);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:var(--font)}
   .shell{display:grid;grid-template-rows:58px 1fr;grid-template-columns:316px 1fr 296px;height:100vh}
 
   /* HEADER */
-  header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--surface);border-bottom:1px solid var(--border);box-shadow:var(--shadow);z-index:100}
+  header{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:0 20px;background:var(--indigo);border-bottom:none;box-shadow:0 2px 8px rgba(79,70,229,0.3);z-index:100}
   .hd-left{display:flex;align-items:center;gap:14px}
-  .logo{font-size:17px;font-weight:600;color:var(--text);letter-spacing:-0.01em}
-  .logo span{color:var(--teal)}
-  .live-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:0.07em;color:var(--green);background:var(--green-bg);border:1px solid var(--green-border);padding:3px 8px;border-radius:20px;font-family:var(--mono)}
+  .logo{font-size:17px;font-weight:700;color:#fff;letter-spacing:-0.02em}
+  .logo span{color:#c7d2fe}
+  .live-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;letter-spacing:0.07em;color:#fff;background:rgba(255,255,255,0.18);border:1px solid rgba(255,255,255,0.3);padding:3px 8px;border-radius:20px;font-family:var(--mono)}
   .pulse{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s ease infinite}
   @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.3;transform:scale(0.6)}}
-  .conn-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:20px;border:1px solid var(--border2);color:var(--muted);background:var(--surface2)}
+  .conn-pill{display:flex;align-items:center;gap:5px;font-size:10px;font-family:var(--mono);padding:3px 9px;border-radius:20px;border:1px solid rgba(255,255,255,0.25);color:#e0e7ff;background:rgba(255,255,255,0.12)}
   .conn-dot{width:6px;height:6px;border-radius:50%;background:var(--dim)}
   .conn-dot.live{background:var(--green);animation:pulse 2s ease infinite}
   .conn-dot.demo{background:var(--amber)}
   .hd-right{display:flex;align-items:center;gap:18px}
   .hd-stat{display:flex;flex-direction:column;align-items:flex-end}
-  .hd-stat strong{font-size:15px;font-weight:600;color:var(--text);line-height:1}
-  .hd-stat span{font-size:10px;color:var(--dim);margin-top:1px}
-  #clock{font-size:13px;font-weight:500;font-family:var(--mono);color:var(--muted)}
-  .settings-btn{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;color:var(--muted);font-size:11px;font-family:var(--mono);padding:5px 11px;cursor:pointer;transition:all .15s}
-  .settings-btn:hover{background:var(--border);color:var(--text)}
+  .hd-stat strong{font-size:15px;font-weight:600;color:#fff;line-height:1}
+  .hd-stat span{font-size:10px;color:#c7d2fe;margin-top:1px}
+  #clock{font-size:13px;font-weight:500;font-family:var(--mono);color:#c7d2fe}
+  .settings-btn{background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:8px;color:#e0e7ff;font-size:11px;font-family:var(--mono);padding:5px 11px;cursor:pointer;transition:all .15s}
+  .settings-btn:hover{background:rgba(255,255,255,0.25);color:#fff}
 
   /* PANELS */
   .panel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border-right:1px solid var(--border)}
@@ -54,7 +57,7 @@
   .panel-scroll::-webkit-scrollbar{width:4px}
   .panel-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
   .panel-header{position:sticky;top:0;z-index:10;padding:11px 14px 9px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
-  .panel-title{font-size:10px;font-weight:600;letter-spacing:0.09em;color:var(--muted);text-transform:uppercase}
+  .panel-title{font-size:10px;font-weight:700;letter-spacing:0.09em;color:var(--indigo);text-transform:uppercase}
   .panel-count{font-size:10px;font-family:var(--mono);color:var(--dim);background:var(--bg);padding:2px 7px;border-radius:10px;border:1px solid var(--border)}
 
   /* STATS */
@@ -63,7 +66,7 @@
   .stat-cell:last-child{border-right:none}
   .stat-n{font-size:20px;font-weight:600;line-height:1}
   .stat-l{font-size:9px;text-transform:uppercase;letter-spacing:0.08em;color:var(--dim);margin-top:2px}
-  .stat-n.blue{color:var(--blue)}.stat-n.green{color:var(--green)}.stat-n.amber{color:var(--amber)}.stat-n.teal{color:var(--teal)}
+  .stat-n.blue{color:var(--blue)}.stat-n.green{color:var(--green)}.stat-n.amber{color:var(--amber)}.stat-n.teal{color:var(--indigo)}
   .section-label{padding:10px 14px 5px;font-size:9px;font-weight:600;letter-spacing:0.1em;color:var(--dim);text-transform:uppercase}
 
   /* SHIP CARDS */
@@ -107,9 +110,9 @@
   .whale-tag.teal{color:var(--teal);background:var(--teal-bg);border-color:#a5f3fc}
 
   /* WEATHER */
-  .weather-block{margin:10px 10px 6px;border-radius:var(--radius);border:1px solid var(--border);background:linear-gradient(135deg,#f0f9ff 0%,#e0f2fe 100%);padding:13px 15px;box-shadow:var(--shadow)}
+  .weather-block{margin:10px 10px 6px;border-radius:var(--radius);border:1px solid var(--indigo-border);background:linear-gradient(135deg,#eef2ff 0%,#e0e7ff 100%);padding:13px 15px;box-shadow:var(--shadow)}
   .weather-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
-  .weather-temp{font-size:34px;font-weight:600;color:var(--text);line-height:1}
+  .weather-temp{font-size:34px;font-weight:700;color:var(--indigo);line-height:1}
   .weather-cond{font-size:12px;color:var(--muted);margin-top:3px}
   .weather-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
   .w-item{display:flex;flex-direction:column;gap:1px}
@@ -154,7 +157,7 @@
   .daddy-state-label.here{color:var(--green)}
   .daddy-state-label.away{color:var(--muted)}
   .daddy-headline{font-size:15px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:5px;}
-  .daddy-countdown{font-size:22px;font-weight:700;color:var(--teal);font-family:var(--mono);line-height:1;margin-bottom:5px;}
+  .daddy-countdown{font-size:22px;font-weight:700;color:var(--indigo);font-family:var(--mono);line-height:1;margin-bottom:5px;}
   .daddy-sub{font-size:10px;color:var(--muted);font-family:var(--mono);}
   .daddy-flight{
     display:flex;align-items:center;gap:5px;margin-top:7px;
@@ -194,7 +197,7 @@
 
   <header>
     <div class="hd-left">
-      <div class="logo">Puget <span>Sound</span></div>
+      <div class="logo">Wetzel<span>Boats</span></div>
       <div class="live-badge"><div class="pulse"></div>LIVE</div>
       <div class="conn-pill"><div class="conn-dot" id="connDot"></div><span id="connLabel">Demo mode</span></div>
     </div>
@@ -202,7 +205,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.7</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#c7d2fe;opacity:0.8;">v3.8</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -665,7 +668,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v3.7 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v3.8 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
