@@ -202,7 +202,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.5</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.6</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -665,7 +665,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v3.5 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v3.6 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -945,21 +945,70 @@ function updateClock(){
 const DADDY_PHOTO_URL = '';
 
 // TRAVEL SCHEDULE
-// Each trip: { arrive: Date in Seattle time, depart: Date in Seattle time, arrFlight, depFlight }
+// Dates are fallbacks - app will try to look up actual times via AeroDataBox API
 const TRIPS = [
   {
-    arrive:    new Date('2026-05-01T21:30:00-07:00'),  // May 1 9:30 PM PDT
-    depart:    new Date('2026-05-09T00:00:00-07:00'),  // May 9 (time TBD — set when known)
-    arrFlight: 'AS 1525',
-    depFlight: 'AS 441',
+    arrive:    new Date('2026-05-01T21:30:00-07:00'),  // AS1525 SEA arrival
+    depart:    new Date('2026-05-09T12:00:00-07:00'),  // AS441 departure (time TBD)
+    arrFlight: 'AS1525',
+    depFlight: 'AS441',
+    arrDate:   '2026-05-01',
+    depDate:   '2026-05-09',
   },
   {
-    arrive:    new Date('2026-05-29T00:00:00-07:00'),  // May 29 (time TBD)
-    depart:    new Date('2026-05-31T00:00:00-07:00'),  // May 31 (time TBD)
-    arrFlight: 'AS 427',
-    depFlight: 'AS 394',
+    arrive:    new Date('2026-05-29T12:00:00-07:00'),  // AS427 SEA arrival (time TBD)
+    depart:    new Date('2026-05-31T12:00:00-07:00'),  // AS394 departure (time TBD)
+    arrFlight: 'AS427',
+    depFlight: 'AS394',
+    arrDate:   '2026-05-29',
+    depDate:   '2026-05-31',
   },
 ];
+
+// AeroDataBox free tier: 150 calls/month, no key needed for scheduled times
+// Fetches actual scheduled arrival/departure times for each flight
+async function enrichFlightTimes() {
+  for (const trip of TRIPS) {
+    try {
+      // Fetch arrival flight to SEA
+      const arrRes = await fetch(
+        `https://aerodatabox.p.rapidapi.com/flights/number/${trip.arrFlight}/${trip.arrDate}`,
+        { headers: {
+          'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
+          'x-rapidapi-key': 'AERODATABOX_KEY_HERE'
+        }}
+      );
+      if (arrRes.ok) {
+        const arrData = await arrRes.json();
+        const seg = arrData.find ? arrData.find(f => f.arrival?.airport?.iata === 'SEA') : arrData[0];
+        if (seg?.arrival?.scheduledTime?.local) {
+          trip.arrive = new Date(seg.arrival.scheduledTime.local);
+          console.log('Flight', trip.arrFlight, 'arrives', trip.arrive);
+        }
+      }
+    } catch(e) { /* use fallback date */ }
+
+    try {
+      // Fetch departure flight from SEA
+      const depRes = await fetch(
+        `https://aerodatabox.p.rapidapi.com/flights/number/${trip.depFlight}/${trip.depDate}`,
+        { headers: {
+          'x-rapidapi-host': 'aerodatabox.p.rapidapi.com',
+          'x-rapidapi-key': 'AERODATABOX_KEY_HERE'
+        }}
+      );
+      if (depRes.ok) {
+        const depData = await depRes.json();
+        const seg = depData.find ? depData.find(f => f.departure?.airport?.iata === 'SEA') : depData[0];
+        if (seg?.departure?.scheduledTime?.local) {
+          trip.depart = new Date(seg.departure.scheduledTime.local);
+          console.log('Flight', trip.depFlight, 'departs', trip.depart);
+        }
+      }
+    } catch(e) { /* use fallback date */ }
+  }
+  updateDaddy();
+}
 
 function getDaddyState() {
   const now = new Date();
@@ -1028,7 +1077,7 @@ function updateDaddy() {
   } else if (s.state === 'here') {
     label.className = 'daddy-state-label here';
     label.textContent = '🏠 Daddy is HOME!';
-    headline.textContent = 'So happy you're here!';
+    headline.textContent = "So happy you're here!";
     countdown.textContent = fmtCountdown(s.diff);
     sub.textContent = 'Leaves ' + fmtDateTime(s.depart);
     flightNum.textContent = s.flight;
@@ -1052,6 +1101,7 @@ function updateDaddy() {
 document.getElementById('aisKeyInput').value = aisKey;
 updateClock(); setInterval(updateClock,15000);
 updateDaddy(); setInterval(updateDaddy, 30000);
+enrichFlightTimes();
 fetchWeather(); setInterval(fetchWeather,600000);
 fetchWhales();  setInterval(fetchWhales,300000);
 if(aisKey){ connectAIS(); } else { loadDemoData(); }
