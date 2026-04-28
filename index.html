@@ -139,21 +139,20 @@
 
   /* DADDY COUNTDOWN */
   .daddy-card{
-    position:absolute;bottom:16px;right:16px;z-index:500;
-    background:rgba(255,255,255,0.96);
-    border:1px solid var(--border2);
-    border-radius:14px;
-    box-shadow:var(--shadow-md);
-    width:200px;
+    background:#fff;
+    border:1px solid #eef0f3;
+    border-radius:12px;
+    box-shadow:0 1px 3px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
     overflow:hidden;
     font-family:var(--font);
+    width:100%;
   }
   .daddy-photo{
-    width:100%;height:110px;object-fit:cover;object-position:top;
+    width:100%;height:160px;object-fit:cover;object-position:top;
     display:block;background:var(--bg);
   }
   .daddy-photo-placeholder{
-    width:100%;height:110px;background:linear-gradient(135deg,#e0f2fe,#bae6fd);
+    width:100%;height:160px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);
     display:flex;align-items:center;justify-content:center;
     font-size:40px;
   }
@@ -167,7 +166,7 @@
   .daddy-state-label.away{color:var(--muted)}
   .daddy-headline{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;}
   .daddy-countdown{font-size:20px;font-weight:700;color:var(--indigo);font-family:var(--mono);line-height:1;margin-bottom:4px;}
-  .daddy-sub{font-size:10px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+  .daddy-sub{font-size:10px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;}
   .daddy-flight-inline{font-size:10px;font-family:var(--mono);color:var(--text);font-weight:600;
     background:var(--indigo-bg);border:1px solid var(--indigo-border);
     border-radius:4px;padding:1px 6px;white-space:nowrap;}
@@ -211,7 +210,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.0</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.2</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -239,24 +238,7 @@
     <div id="map"></div>
     <div class="api-banner" id="apiBanner">⚠ Demo mode — click "API Keys" to connect live AIS feed</div>
 
-    <!-- DADDY COUNTDOWN -->
-    <div class="daddy-card" id="daddyCard">
-      <div class="daddy-photo-placeholder" id="daddyPhotoWrap">
-        <!-- Replace src below with your photo URL, e.g. https://wetzeltg.github.io/puget_sound_dashboard/daddy.jpg -->
-        <img id="daddyPhoto" class="daddy-photo" src="" alt="Daddy"
-          onerror="this.style.display='none'" style="display:none">
-        <span id="daddyEmoji">✈️</span>
-      </div>
-      <div class="daddy-body">
-        <div class="daddy-state-label" id="daddyStateLabel">Countdown</div>
-        <div class="daddy-headline" id="daddyHeadline">Daddy lands in...</div>
-        <div class="daddy-countdown" id="daddyCountdown">--d --h --m</div>
-        <div class="daddy-sub" id="daddySub">
-          <span id="daddySubText"></span>
-          <span class="daddy-flight-inline" id="daddyFlightNum" style="display:none"></span>
-        </div>
-      </div>
-    </div>
+
     <div class="map-overlay">
       <div class="leg-row"><div class="leg-dot" style="background:#2563eb"></div>Approaching</div>
       <div class="leg-row"><div class="leg-dot" style="background:#16a34a"></div>Departing</div>
@@ -290,6 +272,28 @@
       <span class="panel-count" id="whaleCount">Loading...</span>
     </div>
     <div id="whaleList" style="padding-top:8px"></div>
+
+    <!-- DADDY COUNTDOWN -->
+    <div class="panel-header" style="margin-top:2px">
+      <span class="panel-title">Daddy Countdown</span>
+    </div>
+    <div style="padding:10px 10px 12px">
+      <div class="daddy-card" id="daddyCard">
+        <div class="daddy-photo-placeholder" id="daddyPhotoWrap">
+          <img id="daddyPhoto" class="daddy-photo" alt="Daddy" style="display:none">
+          <span id="daddyEmoji">✈️</span>
+        </div>
+        <div class="daddy-body">
+          <div class="daddy-state-label" id="daddyStateLabel">Countdown</div>
+          <div class="daddy-headline" id="daddyHeadline">Daddy lands in...</div>
+          <div class="daddy-countdown" id="daddyCountdown">--d --h --m</div>
+          <div class="daddy-sub" id="daddySub">
+            <span id="daddySubText"></span>
+            <span class="daddy-flight-inline" id="daddyFlightNum" style="display:none"></span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 
 </div>
@@ -674,7 +678,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.0 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v4.2 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -956,10 +960,9 @@ const DADDY_PHOTOS = Array.from({length:14}, (_,i) =>
 let daddyPhotoIdx = 0;
 
 function rotateDaddyPhoto() {
-  const img = document.getElementById('daddyPhoto');
+  const img   = document.getElementById('daddyPhoto');
   const emoji = document.getElementById('daddyEmoji');
-  const next = (daddyPhotoIdx + 1) % DADDY_PHOTOS.length;
-  // Preload next image before swapping
+  const next  = (daddyPhotoIdx + 1) % DADDY_PHOTOS.length;
   const preload = new Image();
   preload.onload = () => {
     daddyPhotoIdx = next;
@@ -968,9 +971,9 @@ function rotateDaddyPhoto() {
     emoji.style.display = 'none';
   };
   preload.onerror = () => {
-    // Skip broken photo and try the next one
     daddyPhotoIdx = next;
-    rotateDaddyPhoto();
+    // Try next one, but stop if we've looped all 14
+    if (daddyPhotoIdx !== 0) rotateDaddyPhoto();
   };
   preload.src = DADDY_PHOTOS[next];
 }
@@ -1088,10 +1091,16 @@ function updateDaddy() {
 
   // Load first photo on first call
   const img = document.getElementById('daddyPhoto');
-  if (!img.src || img.style.display === 'none') {
-    img.src = DADDY_PHOTOS[0];
-    img.style.display = 'block';
-    document.getElementById('daddyEmoji').style.display = 'none';
+  if (img.style.display === 'none' && DADDY_PHOTOS.length > 0) {
+    img.onerror = () => {
+      img.style.display = 'none';
+      document.getElementById('daddyEmoji').style.display = 'flex';
+    };
+    img.onload = () => {
+      img.style.display = 'block';
+      document.getElementById('daddyEmoji').style.display = 'none';
+    };
+    img.src = DADDY_PHOTOS[daddyPhotoIdx];
   }
 
   if (s.state === 'arriving') {
