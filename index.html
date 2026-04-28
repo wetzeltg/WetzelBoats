@@ -202,7 +202,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.6</span>
+      <span style="font-size:10px;font-family:var(--mono);color:var(--dim);opacity:0.6;">v3.7</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -665,7 +665,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v3.6 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v3.7 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -940,9 +940,31 @@ function updateClock(){
 // DADDY COUNTDOWN
 // ═══════════════════════════════════════
 
-// PHOTO: set this to your photo URL once uploaded to GitHub
-// e.g. 'https://wetzeltg.github.io/puget_sound_dashboard/daddy.jpg'
-const DADDY_PHOTO_URL = '';
+// PHOTOS: rotating through d1.jpg - d14.jpg in GitHub repo
+const DADDY_PHOTOS = Array.from({length:14}, (_,i) =>
+  `https://wetzeltg.github.io/puget_sound_dashboard/d${i+1}.jpg`
+);
+let daddyPhotoIdx = 0;
+
+function rotateDaddyPhoto() {
+  const img = document.getElementById('daddyPhoto');
+  const emoji = document.getElementById('daddyEmoji');
+  const next = (daddyPhotoIdx + 1) % DADDY_PHOTOS.length;
+  // Preload next image before swapping
+  const preload = new Image();
+  preload.onload = () => {
+    daddyPhotoIdx = next;
+    img.src = DADDY_PHOTOS[daddyPhotoIdx];
+    img.style.display = 'block';
+    emoji.style.display = 'none';
+  };
+  preload.onerror = () => {
+    // Skip broken photo and try the next one
+    daddyPhotoIdx = next;
+    rotateDaddyPhoto();
+  };
+  preload.src = DADDY_PHOTOS[next];
+}
 
 // TRAVEL SCHEDULE
 // Dates are fallbacks - app will try to look up actual times via AeroDataBox API
@@ -1056,12 +1078,12 @@ function updateDaddy() {
   const flightNum= document.getElementById('daddyFlightNum');
   const emoji    = document.getElementById('daddyEmoji');
 
-  // Load photo if URL is set
-  if (DADDY_PHOTO_URL) {
-    const img = document.getElementById('daddyPhoto');
-    img.src = DADDY_PHOTO_URL;
+  // Load first photo on first call
+  const img = document.getElementById('daddyPhoto');
+  if (!img.src || img.style.display === 'none') {
+    img.src = DADDY_PHOTOS[0];
     img.style.display = 'block';
-    emoji.style.display = 'none';
+    document.getElementById('daddyEmoji').style.display = 'none';
   }
 
   if (s.state === 'arriving') {
@@ -1101,6 +1123,7 @@ function updateDaddy() {
 document.getElementById('aisKeyInput').value = aisKey;
 updateClock(); setInterval(updateClock,15000);
 updateDaddy(); setInterval(updateDaddy, 30000);
+setInterval(rotateDaddyPhoto, 30000); // rotate photo every 30s
 enrichFlightTimes();
 fetchWeather(); setInterval(fetchWeather,600000);
 fetchWhales();  setInterval(fetchWhales,300000);
