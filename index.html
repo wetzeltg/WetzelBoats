@@ -52,7 +52,11 @@
 
   /* PANELS */
   .panel{display:flex;flex-direction:column;overflow:hidden;background:var(--surface);border-right:1px solid var(--border)}
-  .panel:last-child{border-right:none;border-left:1px solid var(--border)}
+  .panel:last-child{border-right:none;border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+  #rightPanel .panel-scroll-area{flex:1;overflow-y:auto;min-height:0}
+  #rightPanel .panel-scroll-area::-webkit-scrollbar{width:4px}
+  #rightPanel .panel-scroll-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+  #rightPanel .daddy-section{flex-shrink:0;border-top:1px solid var(--border)}
   .panel-scroll{flex:1;overflow-y:auto;overflow-x:hidden}
   .panel-scroll::-webkit-scrollbar{width:4px}
   .panel-scroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
@@ -119,14 +123,14 @@
   .dadjoke-loading{font-size:11px;color:var(--dim);font-style:italic;}
 
   /* WEATHER */
-  .weather-block{margin:10px 10px 6px;border-radius:12px;border:1px solid #eef0f3;background:linear-gradient(135deg,#eef2ff 0%,#f0f0ff 100%);padding:13px 15px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
-  .weather-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
-  .weather-temp{font-size:34px;font-weight:700;color:#4f46e5;line-height:1}
-  .weather-cond{font-size:12px;color:var(--muted);margin-top:3px}
-  .weather-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-  .w-item{display:flex;flex-direction:column;gap:1px}
+  .weather-block{margin:6px 10px 4px;border-radius:10px;border:1px solid #eef0f3;background:linear-gradient(135deg,#eef2ff 0%,#f0f0ff 100%);padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.06)}
+  .weather-main{display:flex;justify-content:space-between;align-items:center;margin-bottom:0}
+  .weather-temp{font-size:22px;font-weight:700;color:#4f46e5;line-height:1}
+  .weather-cond{font-size:10px;color:var(--muted);margin-top:1px}
+  .weather-grid{display:flex;gap:10px;margin-top:5px;flex-wrap:wrap}
+  .w-item{display:flex;align-items:center;gap:4px}
   .w-k{font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:0.07em}
-  .w-v{font-size:12px;font-family:var(--mono);color:var(--text)}
+  .w-v{font-size:10px;font-family:var(--mono);color:var(--text)}
 
   /* MAP */
   .map-wrap{position:relative;background:#c8e6f5}
@@ -148,7 +152,7 @@
     width:100%;
   }
   .daddy-photo-wrap-inner{
-    position:relative;width:100%;height:190px;overflow:hidden;
+    position:relative;width:100%;height:120px;overflow:hidden;
     background:#f0f0f0;
   }
   .daddy-photo-bg{
@@ -166,11 +170,11 @@
     display:block;
   }
   .daddy-photo-placeholder{
-    width:100%;height:190px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);
+    width:100%;height:120px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);
     display:flex;align-items:center;justify-content:center;
-    font-size:40px;
+    font-size:32px;
   }
-  .daddy-body{padding:8px 12px 10px;}
+  .daddy-body{padding:6px 12px 8px;}
   .daddy-state-label{
     font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
     margin-bottom:3px;
@@ -178,8 +182,8 @@
   .daddy-state-label.arriving{color:var(--blue)}
   .daddy-state-label.here{color:var(--green)}
   .daddy-state-label.away{color:var(--muted)}
-  .daddy-headline{font-size:14px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:4px;}
-  .daddy-countdown{font-size:20px;font-weight:700;color:var(--indigo);font-family:var(--mono);line-height:1;margin-bottom:4px;}
+  .daddy-headline{font-size:13px;font-weight:700;color:var(--text);line-height:1.2;margin-bottom:3px;}
+  .daddy-countdown{font-size:18px;font-weight:700;color:var(--indigo);font-family:var(--mono);line-height:1;margin-bottom:3px;}
   .daddy-sub{font-size:10px;color:var(--muted);font-family:var(--mono);display:flex;align-items:center;gap:5px;white-space:nowrap;overflow:hidden;}
   .daddy-flight-inline{font-size:10px;font-family:var(--mono);color:var(--text);font-weight:600;
     background:var(--indigo-bg);border:1px solid var(--indigo-border);
@@ -224,7 +228,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.3</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.4</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -263,7 +267,7 @@
     </div>
   </div>
 
-  <div class="panel" id="rightPanel">
+  <div class="panel" id="rightPanel" style="display:flex;flex-direction:column;overflow:hidden;">
     <div class="panel-header">
       <span class="panel-title">Weather · Tacoma</span>
       <span class="panel-count" id="weatherTime">Loading...</span>
@@ -271,7 +275,7 @@
     <div class="weather-block">
       <div class="weather-main">
         <div><div class="weather-temp" id="wTemp">--°F</div><div class="weather-cond" id="wCond">Loading...</div></div>
-        <div style="font-size:34px" id="wIcon">🌥</div>
+        <div style="font-size:24px;line-height:1" id="wIcon">🌥</div>
       </div>
       <div class="weather-grid">
         <div class="w-item"><div class="w-k">Wind</div><div class="w-v" id="wWind">--</div></div>
@@ -281,17 +285,17 @@
       </div>
     </div>
 
-    <div class="panel-header" style="margin-top:2px">
+    <div class="panel-header" style="margin-top:2px;flex-shrink:0;">
       <span class="panel-title">Whale &amp; Orca Sightings</span>
       <span class="panel-count" id="whaleCount">Loading...</span>
     </div>
-    <div id="whaleList" style="padding-top:8px"></div>
+    <div id="whaleList" style="padding-top:6px;overflow-y:auto;min-height:80px;max-height:220px;flex-shrink:0;"></div>
 
     <!-- DADDY COUNTDOWN -->
-    <div class="panel-header" style="margin-top:2px">
+    <div class="panel-header" style="flex-shrink:0;">
       <span class="panel-title">Daddy Countdown</span>
     </div>
-    <div style="padding:10px 10px 12px">
+    <div style="padding:8px 10px 10px;flex-shrink:0;">
       <div class="daddy-card" id="daddyCard">
         <div class="daddy-photo-placeholder" id="daddyPhotoWrap">
           <div class="daddy-photo-wrap-inner" id="daddyPhotoInner" style="display:none">
@@ -695,7 +699,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.3 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v4.4 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -972,7 +976,7 @@ function updateClock(){
 
 // PHOTOS: rotating through d1.jpg - d14.jpg in GitHub repo
 const DADDY_PHOTOS = Array.from({length:14}, (_,i) =>
-  `https://wetzeltg.github.io/wetzelboats/d${i+1}.jpg`
+  `https://wetzeltg.github.io/WetzelBoats/d${i+1}.jpg`
 );
 let daddyPhotoIdx = 0;
 
