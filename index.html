@@ -147,12 +147,26 @@
     font-family:var(--font);
     width:100%;
   }
+  .daddy-photo-wrap-inner{
+    position:relative;width:100%;height:190px;overflow:hidden;
+    background:#f0f0f0;
+  }
+  .daddy-photo-bg{
+    /* blurred backdrop fills the whole area */
+    position:absolute;inset:0;
+    background-size:cover;background-position:center;
+    filter:blur(12px) brightness(0.85);
+    transform:scale(1.1); /* prevent blur edge artifacts */
+  }
   .daddy-photo{
-    width:100%;height:160px;object-fit:cover;object-position:top;
-    display:block;background:var(--bg);
+    position:absolute;inset:0;
+    width:100%;height:100%;
+    object-fit:contain; /* show full photo, no crop */
+    object-position:center;
+    display:block;
   }
   .daddy-photo-placeholder{
-    width:100%;height:160px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);
+    width:100%;height:190px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);
     display:flex;align-items:center;justify-content:center;
     font-size:40px;
   }
@@ -210,7 +224,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.2</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.3</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -280,7 +294,10 @@
     <div style="padding:10px 10px 12px">
       <div class="daddy-card" id="daddyCard">
         <div class="daddy-photo-placeholder" id="daddyPhotoWrap">
-          <img id="daddyPhoto" class="daddy-photo" alt="Daddy" style="display:none">
+          <div class="daddy-photo-wrap-inner" id="daddyPhotoInner" style="display:none">
+            <div class="daddy-photo-bg" id="daddyPhotoBg"></div>
+            <img id="daddyPhoto" class="daddy-photo" alt="Daddy">
+          </div>
           <span id="daddyEmoji">✈️</span>
         </div>
         <div class="daddy-body">
@@ -678,7 +695,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.2 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v4.3 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -955,20 +972,35 @@ function updateClock(){
 
 // PHOTOS: rotating through d1.jpg - d14.jpg in GitHub repo
 const DADDY_PHOTOS = Array.from({length:14}, (_,i) =>
-  `https://wetzeltg.github.io/WetzelBoats/d${i+1}.jpg`
+  `https://wetzeltg.github.io/wetzelboats/d${i+1}.jpg`
 );
 let daddyPhotoIdx = 0;
 
-function rotateDaddyPhoto() {
+function loadDaddyPhoto(url) {
   const img   = document.getElementById('daddyPhoto');
+  const bg    = document.getElementById('daddyPhotoBg');
+  const inner = document.getElementById('daddyPhotoInner');
   const emoji = document.getElementById('daddyEmoji');
+  const preload = new Image();
+  preload.onload = () => {
+    img.src = url;
+    bg.style.backgroundImage = `url('${url}')`;
+    inner.style.display = 'block';
+    emoji.style.display = 'none';
+  };
+  preload.onerror = () => {
+    inner.style.display = 'none';
+    emoji.style.display = 'flex';
+  };
+  preload.src = url;
+}
+
+function rotateDaddyPhoto() {
   const next  = (daddyPhotoIdx + 1) % DADDY_PHOTOS.length;
   const preload = new Image();
   preload.onload = () => {
     daddyPhotoIdx = next;
-    img.src = DADDY_PHOTOS[daddyPhotoIdx];
-    img.style.display = 'block';
-    emoji.style.display = 'none';
+    loadDaddyPhoto(DADDY_PHOTOS[daddyPhotoIdx]);
   };
   preload.onerror = () => {
     daddyPhotoIdx = next;
@@ -1090,18 +1122,7 @@ function updateDaddy() {
   const emoji    = document.getElementById('daddyEmoji');
 
   // Load first photo on first call
-  const img = document.getElementById('daddyPhoto');
-  if (img.style.display === 'none' && DADDY_PHOTOS.length > 0) {
-    img.onerror = () => {
-      img.style.display = 'none';
-      document.getElementById('daddyEmoji').style.display = 'flex';
-    };
-    img.onload = () => {
-      img.style.display = 'block';
-      document.getElementById('daddyEmoji').style.display = 'none';
-    };
-    img.src = DADDY_PHOTOS[daddyPhotoIdx];
-  }
+  loadDaddyPhoto(DADDY_PHOTOS[daddyPhotoIdx]);
 
   if (s.state === 'arriving') {
     label.className = 'daddy-state-label arriving';
