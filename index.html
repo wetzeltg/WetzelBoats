@@ -228,7 +228,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.4</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.5</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -699,7 +699,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.4 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v4.5 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -1018,16 +1018,16 @@ function rotateDaddyPhoto() {
 // Dates are fallbacks - app will try to look up actual times via AeroDataBox API
 const TRIPS = [
   {
-    arrive:    new Date('2026-05-01T21:30:00-07:00'),  // AS1525 SEA arrival
-    depart:    new Date('2026-05-09T12:00:00-07:00'),  // AS441 departure (time TBD)
+    arrive:    new Date('2026-05-01T21:30:00-07:00'),  // AS1525 arrives SEA 9:30 PM PDT
+    depart:    new Date('2026-05-09T09:30:00-07:00'),  // AS441 departs SEA 9:30 AM PDT
     arrFlight: 'AS1525',
     depFlight: 'AS441',
     arrDate:   '2026-05-01',
     depDate:   '2026-05-09',
   },
   {
-    arrive:    new Date('2026-05-29T12:00:00-07:00'),  // AS427 SEA arrival (time TBD)
-    depart:    new Date('2026-05-31T12:00:00-07:00'),  // AS394 departure (time TBD)
+    arrive:    new Date('2026-05-29T22:28:00-07:00'),  // AS427 arrives SEA 10:28 PM PDT
+    depart:    new Date('2026-05-31T21:18:00-07:00'),  // AS394 departs SEA 9:18 PM PDT
     arrFlight: 'AS427',
     depFlight: 'AS394',
     arrDate:   '2026-05-29',
