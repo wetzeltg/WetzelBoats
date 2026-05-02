@@ -266,7 +266,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.8</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.9</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -776,7 +776,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.8 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v4.9 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -963,30 +963,83 @@ function friendlyType(raw) {
 async function fetchWhales(){
   try{
     // Primary: Acartia API (set ACARTIA_KEY when you have one from acartia.io)
-    const ACARTIA_KEY = '';
-    let res;
-    if (ACARTIA_KEY) {
-      res = await fetch('https://acartia.io/api/v1/sightings?trusted=1&days=1', {
-        headers: { 'Authorization': 'Bearer ' + ACARTIA_KEY }
+    const ACARTIA_KEY = 'i74Wct3feCqUylOQh5cNhjiJ9d70uH17';
+    let res, data;
+
+    // Try Acartia API - the best source for Salish Sea sightings
+    // Acartia docs show access_token as header, endpoint /api/v1/sightings
+    try {
+      res = await fetch('https://acartia.io/api/v1/sightings', {
+        headers: {
+          'access_token': ACARTIA_KEY,
+          'Authorization': 'Bearer ' + ACARTIA_KEY,
+          'Content-Type': 'application/json'
+        }
       });
-    } else {
-      // Fallback: original Whale Museum API (currently offline)
+      if (res.ok) {
+        data = await res.json();
+        console.log('Acartia response:', data?.length, 'records');
+      } else {
+        console.log('Acartia returned:', res.status);
+        throw new Error('Acartia ' + res.status);
+      }
+    } catch(acartiaErr) {
+      console.log('Acartia failed, trying Whale Museum:', acartiaErr.message);
+      // Fallback to Whale Museum (may be offline)
       res = await fetch('https://hotline.whalemuseum.org/api.json?recent=24&limit=30');
+      if(!res.ok) throw new Error('Both APIs failed');
+      data = await res.json();
     }
+
+    // Map Acartia format to our internal whale object format
+    // Acartia fields: created (timestamp), profile (species info), latitude, longitude, 
+    //                 data_source_name, ssemmi_date_added, trusted
+    const isAcartiaFormat = data?.[0]?.profile !== undefined || data?.[0]?.data_source_name !== undefined;
+    console.log('Is Acartia format:', isAcartiaFormat, 'Sample:', JSON.stringify(data?.[0])?.substring(0,200));
+
     if(!res.ok) throw new Error();
     const data=await res.json();
-    const sp={'orca':'Orca (Killer Whale)','gray whale':'Gray Whale','humpback':'Humpback Whale','minke':'Minke Whale'};
+    const sp={'orca':'Orca (Killer Whale)','gray whale':'Gray Whale','humpback':'Humpback Whale','minke':'Minke Whale','killer whale':'Orca (Killer Whale)'};
     const tp={'southern resident':'Southern Resident','transient':"Bigg's / Transient",'northern resident':'Northern Resident'};
-    whales=data.filter(w=>w.species).map(w=>({
-      species:sp[w.species?.toLowerCase()]||w.species,
-      location:w.description||'Puget Sound area',
-      timeAgo:timeAgo(w.created_at),
-      pod:w.orca_type?(tp[w.orca_type.toLowerCase()]||w.orca_type)+(w.orca_pod?' · '+w.orca_pod.toUpperCase()+' pod':''):null,
-      count:w.quantity?w.quantity+' individual'+(w.quantity>1?'s':''):null,
-      heading:null,
-      lat:w.latitude?parseFloat(w.latitude):null,
-      lng:w.longitude?parseFloat(w.longitude):null,
-    }));
+
+    if (isAcartiaFormat) {
+      // Map Acartia format
+      // Filter to last 24 hours and Puget Sound area
+      const cutoff = Date.now() - 24*60*60*1000;
+      whales = data
+        .filter(w => {
+          const t = new Date(w.created || w.ssemmi_date_added).getTime();
+          return t > cutoff;
+        })
+        .map(w => {
+          // Species from profile or type field
+          const rawSpecies = (w.profile?.toLowerCase() || w.type?.toLowerCase() || w.species?.toLowerCase() || '');
+          const species = sp[rawSpecies] || w.profile || w.type || w.species || 'Marine mammal';
+          return {
+            species,
+            location: w.data_source_name || w.description || 'Puget Sound area',
+            timeAgo: timeAgo(w.created || w.ssemmi_date_added),
+            pod: w.orca_type ? (tp[w.orca_type.toLowerCase()]||w.orca_type) : null,
+            count: w.no_of_animals ? w.no_of_animals + ' individual' + (w.no_of_animals > 1 ? 's' : '') : null,
+            heading: null,
+            lat: w.latitude  ? parseFloat(w.latitude)  : null,
+            lng: w.longitude ? parseFloat(w.longitude) : null,
+          };
+        })
+        .filter(w => w.lat && w.lng); // only show if we have location
+    } else {
+      // Map Whale Museum format
+      whales=data.filter(w=>w.species).map(w=>({
+        species:sp[w.species?.toLowerCase()]||w.species,
+        location:w.description||'Puget Sound area',
+        timeAgo:timeAgo(w.created_at),
+        pod:w.orca_type?(tp[w.orca_type.toLowerCase()]||w.orca_type)+(w.orca_pod?' · '+w.orca_pod.toUpperCase()+' pod':''):null,
+        count:w.quantity?w.quantity+' individual'+(w.quantity>1?'s':''):null,
+        heading:null,
+        lat:w.latitude?parseFloat(w.latitude):null,
+        lng:w.longitude?parseFloat(w.longitude):null,
+      }));
+    }
   }catch(e){
     // API unavailable - whales array stays empty, dad joke will show
     console.log('Whale API unavailable:', e.message);
@@ -1344,7 +1397,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v4.8';
+const CURRENT_VERSION = 'v4.9';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {
