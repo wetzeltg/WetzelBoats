@@ -266,7 +266,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.7</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.8</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -776,7 +776,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.7 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v4.8 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -962,7 +962,17 @@ function friendlyType(raw) {
 // ═══════════════════════════════════════
 async function fetchWhales(){
   try{
-    const res=await fetch('https://hotline.whalemuseum.org/api.json?recent=24&limit=30');
+    // Primary: Acartia API (set ACARTIA_KEY when you have one from acartia.io)
+    const ACARTIA_KEY = '';
+    let res;
+    if (ACARTIA_KEY) {
+      res = await fetch('https://acartia.io/api/v1/sightings?trusted=1&days=1', {
+        headers: { 'Authorization': 'Bearer ' + ACARTIA_KEY }
+      });
+    } else {
+      // Fallback: original Whale Museum API (currently offline)
+      res = await fetch('https://hotline.whalemuseum.org/api.json?recent=24&limit=30');
+    }
     if(!res.ok) throw new Error();
     const data=await res.json();
     const sp={'orca':'Orca (Killer Whale)','gray whale':'Gray Whale','humpback':'Humpback Whale','minke':'Minke Whale'};
@@ -977,7 +987,10 @@ async function fetchWhales(){
       lat:w.latitude?parseFloat(w.latitude):null,
       lng:w.longitude?parseFloat(w.longitude):null,
     }));
-  }catch(e){ /* keep demo */ }
+  }catch(e){
+    // API unavailable - whales array stays empty, dad joke will show
+    console.log('Whale API unavailable:', e.message);
+  }
   renderWhales(); updateMapMarkers();
 }
 function timeAgo(iso){ if(!iso)return''; const diff=Date.now()-new Date(iso).getTime(); const h=Math.floor(diff/3600000),m=Math.floor(diff/60000); if(m<60)return m+'m ago'; if(h<24)return h+'h ago'; return Math.floor(h/24)+'d ago'; }
@@ -1266,9 +1279,13 @@ function dadJokeHTML() {
   const setup     = dadJoke ? dadJoke.setup    : '...loading a whale of a joke...';
   const punchline = dadJoke ? dadJoke.punchline : null;
   return `<div class="dadjoke-card">
-    <div class="dadjoke-header">🐳 No whales today — but here's a whale of a joke!</div>
+    <div class="dadjoke-header">🐳 No whales reported today — but here's a whale of a joke!</div>
     <div class="dadjoke-setup">${setup}</div>
     ${punchline ? `<div class="dadjoke-punchline">${punchline} 😄</div>` : ''}
+    <div style="margin-top:8px;font-size:10px;font-family:var(--mono);color:var(--dim);">
+      Check <a href="https://www.orcanetwork.org/recent-sightings" target="_blank"
+        style="color:var(--indigo);text-decoration:none;">orcanetwork.org</a> for latest sightings
+    </div>
   </div>`;
 }
 
@@ -1327,7 +1344,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v4.7';
+const CURRENT_VERSION = 'v4.8';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {
