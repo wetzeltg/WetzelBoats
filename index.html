@@ -266,7 +266,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.0</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.1</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -776,7 +776,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v5.0 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v5.1 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -1007,15 +1007,19 @@ async function fetchWhales(){
       whales = data
         .filter(w => {
           const t = new Date(w.created || w.ssemmi_date_added).getTime();
-          return t > cutoff;
+          const lat = parseFloat(w.latitude);
+          const lng = parseFloat(w.longitude);
+          // Filter to last 24h AND Puget Sound / Salish Sea area
+          return t > cutoff && lat > 46.8 && lat < 49.0 && lng > -124.5 && lng < -122.0;
         })
         .map(w => {
           // Species from profile or type field
-          const rawSpecies = (w.profile?.toLowerCase() || w.type?.toLowerCase() || w.species?.toLowerCase() || '');
-          const species = sp[rawSpecies] || w.profile || w.type || w.species || 'Marine mammal';
+          // In Acartia, 'type' holds the species name, 'profile' is a user object
+          const rawSpecies = (w.type?.toLowerCase() || w.species?.toLowerCase() || '');
+          const species = sp[rawSpecies] || w.type || w.species || 'Marine mammal';
           return {
             species,
-            location: w.data_source_name || w.description || 'Puget Sound area',
+            location: w.location_details || w.data_source_name || 'Puget Sound area',
             timeAgo: timeAgo(w.created || w.ssemmi_date_added),
             pod: w.orca_type ? (tp[w.orca_type.toLowerCase()]||w.orca_type) : null,
             count: w.no_of_animals ? w.no_of_animals + ' individual' + (w.no_of_animals > 1 ? 's' : '') : null,
@@ -1395,7 +1399,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v5.0';
+const CURRENT_VERSION = 'v5.1';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {
@@ -1431,7 +1435,6 @@ updateClock(); setInterval(updateClock,15000);
 fetchDadJoke();
 updateDaddy(); setInterval(updateDaddy, 30000);
 setInterval(rotateDaddyPhoto, 30000); // rotate photo every 30s
-enrichFlightTimes();
 fetchWeather(); setInterval(fetchWeather,600000);
 fetchWhales();  setInterval(fetchWhales,300000);
 if(aisKey){ connectAIS(); } else { loadDemoData(); }
