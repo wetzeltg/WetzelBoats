@@ -266,7 +266,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v4.9</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.0</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -776,7 +776,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v4.9 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v5.0 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -997,8 +997,6 @@ async function fetchWhales(){
     const isAcartiaFormat = data?.[0]?.profile !== undefined || data?.[0]?.data_source_name !== undefined;
     console.log('Is Acartia format:', isAcartiaFormat, 'Sample:', JSON.stringify(data?.[0])?.substring(0,200));
 
-    if(!res.ok) throw new Error();
-    const data=await res.json();
     const sp={'orca':'Orca (Killer Whale)','gray whale':'Gray Whale','humpback':'Humpback Whale','minke':'Minke Whale','killer whale':'Orca (Killer Whale)'};
     const tp={'southern resident':'Southern Resident','transient':"Bigg's / Transient",'northern resident':'Northern Resident'};
 
@@ -1397,7 +1395,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v4.9';
+const CURRENT_VERSION = 'v5.0';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {
