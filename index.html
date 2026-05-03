@@ -103,14 +103,17 @@
   .ship-v.hi{color:var(--text);font-weight:500}
 
   /* WHALE CARDS */
-  .whale-card{margin:0 10px 8px;border-radius:var(--radius);border:1px solid var(--purple-border);border-left:3px solid var(--purple);background:var(--purple-bg);padding:10px 12px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
-  .whale-card:hover,.whale-card.highlighted{box-shadow:0 0 0 2px var(--purple-border),var(--shadow-md)}
+  .whale-card{margin:0 10px 8px;border-radius:var(--radius);border:1px solid #e5e7eb;border-left:3px solid #6b7280;background:#f9fafb;padding:10px 12px;box-shadow:var(--shadow);cursor:pointer;transition:box-shadow .15s}
+  .whale-card.orca{border-left-color:#111;background:#f3f4f6;}
+  .whale-card:hover,.whale-card.highlighted{box-shadow:0 0 0 2px #d1d5db,var(--shadow-md)}
   .whale-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px}
-  .whale-species{font-size:12px;font-weight:600;color:var(--purple)}
+  .whale-species{font-size:12px;font-weight:600;color:#4b5563}
+  .whale-card.orca .whale-species{color:#111}
   .whale-time{font-size:10px;font-family:var(--mono);color:var(--dim)}
   .whale-location{font-size:11px;color:var(--muted);margin-bottom:6px}
   .whale-tags{display:flex;gap:5px;flex-wrap:wrap}
-  .whale-tag{font-size:9px;font-family:var(--mono);font-weight:500;padding:2px 7px;border-radius:4px;background:var(--surface);color:var(--purple);border:1px solid var(--purple-border)}
+  .whale-tag{font-size:9px;font-family:var(--mono);font-weight:500;padding:2px 7px;border-radius:4px;background:#fff;color:#374151;border:1px solid #d1d5db}
+  .whale-card.orca .whale-tag{color:#111;border-color:#9ca3af;background:#f3f4f6}
   .whale-tag.teal{color:var(--teal);background:var(--teal-bg);border-color:#a5f3fc}
   .dadjoke-card{
     margin:0 10px 8px;border-radius:var(--radius);
@@ -266,7 +269,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.1</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.2</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -675,7 +678,9 @@ function renderWhales() {
     list.innerHTML = dadJokeHTML();
     return;
   }
-  list.innerHTML = whales.map((w,i)=>`<div class="whale-card" data-widx="${i}"
+  list.innerHTML = whales.map((w,i)=>{
+    const cls = isOrcaSpecies(w.species) ? 'orca' : 'whale';
+    return `<div class="whale-card ${cls}" data-widx="${i}"
     onmouseenter="highlightWhale(${i})"
     onmouseleave="highlightWhale(null)"
     onclick="focusWhale(${i})">
@@ -686,7 +691,8 @@ function renderWhales() {
       ${w.count ?`<span class="whale-tag teal">${w.count}</span>`:''}
       ${w.heading?`<span class="whale-tag teal">${w.heading}</span>`:''}
     </div>
-  </div>`).join('');
+  </div>`;
+  }).join('');
 }
 
 function focusWhale(idx) {
@@ -776,7 +782,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v5.1 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v5.2 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -1003,7 +1009,7 @@ async function fetchWhales(){
     if (isAcartiaFormat) {
       // Map Acartia format
       // Filter to last 24 hours and Puget Sound area
-      const cutoff = Date.now() - 24*60*60*1000;
+      const cutoff = Date.now() - 72*60*60*1000;
       whales = data
         .filter(w => {
           const t = new Date(w.created || w.ssemmi_date_added).getTime();
@@ -1399,7 +1405,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v5.1';
+const CURRENT_VERSION = 'v5.2';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {
