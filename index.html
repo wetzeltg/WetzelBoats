@@ -269,7 +269,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.2</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.3</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -678,12 +678,21 @@ function renderWhales() {
     list.innerHTML = dadJokeHTML();
     return;
   }
-  list.innerHTML = whales.map((w,i)=>{
+  // Sort by distance from home, then by recency on ties
+  const sorted = [...whales].map((w,i)=>({...w, _origIdx:i})).sort((a,b)=>{
+    const distA = (a.lat && a.lng) ? Math.sqrt(Math.pow(a.lat-HOME_LAT,2)+Math.pow((a.lng-HOME_LNG)*Math.cos(HOME_LAT*Math.PI/180),2)) : 9999;
+    const distB = (b.lat && b.lng) ? Math.sqrt(Math.pow(b.lat-HOME_LAT,2)+Math.pow((b.lng-HOME_LNG)*Math.cos(HOME_LAT*Math.PI/180),2)) : 9999;
+    if (Math.abs(distA-distB) > 0.01) return distA - distB; // sort by distance
+    return new Date(b._created||0) - new Date(a._created||0); // then by recency
+  });
+
+  list.innerHTML = sorted.map((w,i)=>{
     const cls = isOrcaSpecies(w.species) ? 'orca' : 'whale';
-    return `<div class="whale-card ${cls}" data-widx="${i}"
-    onmouseenter="highlightWhale(${i})"
+    const origIdx = w._origIdx;
+    return `<div class="whale-card ${cls}" data-widx="${origIdx}"
+    onmouseenter="highlightWhale(${origIdx})"
     onmouseleave="highlightWhale(null)"
-    onclick="focusWhale(${i})">
+    onclick="focusWhale(${origIdx})">
     <div class="whale-header"><div class="whale-species">${w.species}</div><div class="whale-time">${w.timeAgo}</div></div>
     <div class="whale-location">📍 ${w.location}</div>
     <div class="whale-tags">
@@ -782,7 +791,7 @@ function updateDebug() {
   const el = document.getElementById('debugPanel');
   if (!el) return;
   const arr = Object.values(vessels);
-  el.innerHTML = '<strong>v5.2 · Live vessels: '+arr.length+'</strong><br>' +
+  el.innerHTML = '<strong>v5.3 · Live vessels: '+arr.length+'</strong><br>' +
     arr.map(v=>`${v.name||v.mmsi} | ${v.status||'?'} | spd:${v.speed??'?'} kn | type:${v.shipType||'?'} | flag:${v.flag||'?'} | from:${v.origin||'?'} | to:${v.destination||'?'}`).join('<br>');
 }
 
@@ -1027,6 +1036,7 @@ async function fetchWhales(){
             species,
             location: w.location_details || w.data_source_name || 'Puget Sound area',
             timeAgo: timeAgo(w.created || w.ssemmi_date_added),
+            _created: w.created || w.ssemmi_date_added,
             pod: w.orca_type ? (tp[w.orca_type.toLowerCase()]||w.orca_type) : null,
             count: w.no_of_animals ? w.no_of_animals + ' individual' + (w.no_of_animals > 1 ? 's' : '') : null,
             heading: null,
@@ -1041,6 +1051,7 @@ async function fetchWhales(){
         species:sp[w.species?.toLowerCase()]||w.species,
         location:w.description||'Puget Sound area',
         timeAgo:timeAgo(w.created_at),
+        _created:w.created_at,
         pod:w.orca_type?(tp[w.orca_type.toLowerCase()]||w.orca_type)+(w.orca_pod?' · '+w.orca_pod.toUpperCase()+' pod':''):null,
         count:w.quantity?w.quantity+' individual'+(w.quantity>1?'s':''):null,
         heading:null,
@@ -1405,7 +1416,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v5.2';
+const CURRENT_VERSION = 'v5.3';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {
