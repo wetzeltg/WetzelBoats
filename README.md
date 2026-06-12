@@ -111,7 +111,7 @@ let aisKey = localStorage.getItem('aisKey') || 'YOUR_AIS_KEY';
 const ACARTIA_KEY = 'YOUR_ACARTIA_KEY';
 
 // Auto-refresh version detection
-const CURRENT_VERSION = 'v5.12';
+const CURRENT_VERSION = 'v5.13';
 
 // GitHub Pages URL for version check
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
@@ -169,6 +169,13 @@ All SVG icon definitions (vessels and whales) are embedded as JS template litera
 
 ## Future Features Roadmap
 
+### Message in a Bottle 🍾
+A private video-messaging feature for the family. 
+- **The Button:** "Cast a Bottle 🍾" (records a <1 min video message).
+- **The Notification:** "A bottle has washed ashore!" appears as a large, interactive overlay on the tablet.
+- **Interaction:** Family can view the message and "Cast a Bottle" back.
+- **Requirement:** Will require Firebase or similar cloud integration for video storage and real-time signaling.
+
 ### Mobile-Responsive Layout (designed, not yet built)
 Full redesign for phones while keeping tablet layout unchanged:
 - **Portrait mode** — map always visible, bottom sheet slides up when tabs tapped. Cards scroll horizontally, sorted by distance from current map center. Tapping a map icon opens the relevant tab and scrolls to that card.
@@ -211,6 +218,7 @@ Add `navigator.wakeLock.request('screen')` to keep the screen on while the app i
 
 | Version | Changes |
 |---------|---------|
+| v5.13 | Added "Message in a Bottle" video feature to the roadmap |
 | v5.12 | Fixed SyntaxError on jokeBannerDismissed and moved version constants to top |
 | v5.11 | Moved version constants to top of script and fixed header HTML typo |
 | v5.10 | Fixed syntax error from v5.8 that caused app crash |
