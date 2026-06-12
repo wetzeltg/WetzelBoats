@@ -111,7 +111,7 @@ let aisKey = localStorage.getItem('aisKey') || 'YOUR_AIS_KEY';
 const ACARTIA_KEY = 'YOUR_ACARTIA_KEY';
 
 // Auto-refresh version detection
-const CURRENT_VERSION = 'v5.10';
+const CURRENT_VERSION = 'v5.12';
 
 // GitHub Pages URL for version check
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
@@ -211,6 +211,8 @@ Add `navigator.wakeLock.request('screen')` to keep the screen on while the app i
 
 | Version | Changes |
 |---------|---------|
+| v5.12 | Fixed SyntaxError on jokeBannerDismissed and moved version constants to top |
+| v5.11 | Moved version constants to top of script and fixed header HTML typo |
 | v5.10 | Fixed syntax error from v5.8 that caused app crash |
 | v5.8 | Replaced Namibia facts banner with a Dad Joke banner |
 | v5.7 | Added safety sort to Daddy TRIPS logic and bumped version |

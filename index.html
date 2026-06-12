@@ -269,7 +269,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.10</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.12</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -388,6 +388,9 @@
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
+const CURRENT_VERSION = 'v5.12';
+const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
+
 let aisKey = localStorage.getItem('aisKey') || '769a160fd5bdd97fb5a5a1a05f80e845b5e81a9c';
 let wsConn = null;
 let vessels = {};
@@ -1328,9 +1331,8 @@ function dadJokeHTML() {
 }
 
 // ═══════════════════════════════════════
-// NAMIBIA FUN FACTS
+// DAD JOKE BANNER LOGIC
 // ═══════════════════════════════════════
-
 let jokeBannerDismissed = false;
 let jokeBannerTimer = null;
 
@@ -1357,10 +1359,6 @@ setTimeout(()=>{ showJokeBanner(); setInterval(showJokeBanner, 120000); }, 10000
 // ═══════════════════════════════════════
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
-
-const CURRENT_VERSION = 'v5.10';
-const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
-
 async function checkForUpdate() {
   try {
     // Fetch with cache-busting so we always get the latest deployed file
