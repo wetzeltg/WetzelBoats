@@ -113,7 +113,7 @@ let aisKey = localStorage.getItem('aisKey') || 'YOUR_AIS_KEY';
 const ACARTIA_KEY = 'YOUR_ACARTIA_KEY';
 
 // Auto-refresh version detection
-const CURRENT_VERSION = 'v5.3';
+const CURRENT_VERSION = 'v5.4';
 
 // GitHub Pages URL for version check
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
@@ -213,6 +213,7 @@ Add `navigator.wakeLock.request('screen')` to keep the screen on while the app i
 
 | Version | Changes |
 |---------|---------|
+| v5.4 | Updated Daddy Countdown with May 30/June 14 trips |
 | v5.3 | Whale cards sorted by distance from home, then recency; orca/whale card colors (black/gray) matching map icons |
 | v5.2 | Whale sighting window extended to 72 hours; orca cards black, whale cards gray |
 | v5.1 | Fixed Acartia species mapping (`type` field, not `profile`); geographic filter for Puget Sound; removed broken AeroDataBox calls |
