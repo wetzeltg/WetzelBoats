@@ -269,7 +269,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.4</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.7</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -1180,11 +1180,11 @@ function rotateDaddyPhoto() {
 // Dates are fallbacks - app will try to look up actual times via AeroDataBox API
 const TRIPS = [
   {
-    arrive:    new Date('2026-05-30T22:45:00-07:00'),  // AS309 arrives SEA 10:45 PM PDT
+    arrive:    new Date('2026-06-12T22:45:00-07:00'),  // AS309 arrives SEA 10:45 PM PDT
     depart:    new Date('2026-06-14T21:33:00-07:00'),  // AS394 departs SEA 9:33 PM PDT
     arrFlight: 'AS309',
     depFlight: 'AS394',
-    arrDate:   '2026-05-30',
+    arrDate:   '2026-06-12',
     depDate:   '2026-06-14',
   },
 ];
@@ -1236,7 +1236,9 @@ async function enrichFlightTimes() {
 
 function getDaddyState() {
   const now = new Date();
-  for (const trip of TRIPS) {
+  // Sort trips by date just in case they are added out of order
+  const sortedTrips = [...TRIPS].sort((a, b) => a.arrive - b.arrive);
+  for (const trip of sortedTrips) {
     if (now < trip.arrive) {
       // Upcoming arrival
       const diff = trip.arrive - now;
@@ -1408,7 +1410,7 @@ setTimeout(()=>{ showNamibia(); setInterval(showNamibia, 120000); }, 10000);
 // AUTO-REFRESH ON NEW DEPLOYMENT
 // ═══════════════════════════════════════
 
-const CURRENT_VERSION = 'v5.4';
+const CURRENT_VERSION = 'v5.7';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 async function checkForUpdate() {

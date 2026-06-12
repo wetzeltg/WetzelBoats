@@ -69,10 +69,8 @@ Current hardcoded trips (update in `index.html` under `const TRIPS`):
 
 | Flight | Direction | Date & Time | Notes |
 |--------|-----------|-------------|-------|
-| AS 1525 | FL → SEA | May 1, 2026 · 9:30 PM PDT | Arrives Seattle |
-| AS 441 | SEA → FL | May 9, 2026 · 9:30 AM PDT | Departs Seattle |
-| AS 427 | FL → SEA | May 29, 2026 · 10:28 PM PDT | Arrives Seattle |
-| AS 394 | SEA → FL | May 31, 2026 · 9:18 PM PDT | Departs Seattle |
+| AS 309 | FL → SEA | June 12, 2026 · 10:45 PM PDT | Arrives Seattle |
+| AS 394 | SEA → FL | June 14, 2026 · 9:33 PM PDT | Departs Seattle |
 
 Photos stored as `d1.jpg` through `d14.jpg`, rotate every 30 seconds with blurred backdrop fill technique.
 
@@ -113,7 +111,7 @@ let aisKey = localStorage.getItem('aisKey') || 'YOUR_AIS_KEY';
 const ACARTIA_KEY = 'YOUR_ACARTIA_KEY';
 
 // Auto-refresh version detection
-const CURRENT_VERSION = 'v5.4';
+const CURRENT_VERSION = 'v5.7';
 
 // GitHub Pages URL for version check
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
@@ -213,6 +211,9 @@ Add `navigator.wakeLock.request('screen')` to keep the screen on while the app i
 
 | Version | Changes |
 |---------|---------|
+| v5.7 | Added safety sort to Daddy TRIPS logic and bumped version |
+| v5.6 | Corrected trip to June 12, 2026 and fixed versioning in debug panel |
+| v5.5 | Version bump to test VS Code staging and commit workflow |
 | v5.4 | Updated Daddy Countdown with May 30/June 14 trips |
 | v5.3 | Whale cards sorted by distance from home, then recency; orca/whale card colors (black/gray) matching map icons |
 | v5.2 | Whale sighting window extended to 72 hours; orca cards black, whale cards gray |
