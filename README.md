@@ -36,11 +36,11 @@ Three sections stacked vertically, all visible without scrolling:
 - *Daddy is HOME!* — countdown to departure, with flight number
 - *Miss you Daddy* — between trips
 
-### Namibia Fun Fact Banner
-A full-width banner that slides up from the bottom of the screen, honoring the family's Namibian exchange student. Appears 10 seconds after page load, then every 2 minutes. Auto-dismisses after 15 seconds or can be closed with ✕. Features:
-- A mini SVG rendering of the Namibian flag (all 5 colors, 12-rayed golden sun)
-- 20 curated uplifting, factual facts about Namibia covering wildlife, conservation, geography, and culture
-- Deep blue background (`#003580`) with gold label text (`#FFCE00`) matching the flag colors
+### Dad Joke Banner
+A full-width banner that slides up from the bottom of the screen every 2 minutes. Features:
+- Freshly fetched dad jokes from `icanhazdadjoke.com`.
+- Auto-dismisses after 20 seconds.
+- Deep indigo background matching the app's primary theme.
 
 ---
 
@@ -111,7 +111,7 @@ let aisKey = localStorage.getItem('aisKey') || 'YOUR_AIS_KEY';
 const ACARTIA_KEY = 'YOUR_ACARTIA_KEY';
 
 // Auto-refresh version detection
-const CURRENT_VERSION = 'v5.7';
+const CURRENT_VERSION = 'v5.8';
 
 // GitHub Pages URL for version check
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
@@ -211,6 +211,7 @@ Add `navigator.wakeLock.request('screen')` to keep the screen on while the app i
 
 | Version | Changes |
 |---------|---------|
+| v5.8 | Replaced Namibia facts banner with a Dad Joke banner |
 | v5.7 | Added safety sort to Daddy TRIPS logic and bumped version |
 | v5.6 | Corrected trip to June 12, 2026 and fixed versioning in debug panel |
 | v5.5 | Version bump to test VS Code staging and commit workflow |
