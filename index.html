@@ -410,6 +410,21 @@ let whales = [];
 let mapMarkers = {};       // mmsi → { marker, el }
 let whaleMapMarkers = [];  // [ { marker, el, idx } ]
 
+ // Register a dummy service worker to satisfy Chrome's PWA install requirements
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    const blob = new Blob([`
+      self.addEventListener('install', (e) => self.skipWaiting());
+      self.addEventListener('activate', (e) => e.waitUntil(self.clients.claim()));
+      self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
+    `], { type: 'application/javascript' });
+    
+    navigator.serviceWorker.register(URL.createObjectURL(blob), { scope: './' })
+      .then(reg => console.log('SW registered successfully'))
+      .catch(err => console.log('SW registration failed', err));
+  });
+} 
+
 // Home location: 4910 La Hal Da Ave NE, Tacoma WA 98422
 const HOME_LAT = 47.3012;
 const HOME_LNG = -122.3892;
