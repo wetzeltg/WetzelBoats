@@ -5,8 +5,13 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>WetzelBoats</title>
 
-<link rel="manifest" href="data:application/manifest+json,%7B%22name%22%3A%22WetzelBoats%22%2C%22short_name%22%3A%22WetzelBoats%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23f7f8fa%22%2C%22theme_color%22%3A%22%234f46e5%22%7D">
+<!-- Link to External Web App Manifest File -->
+<link rel="manifest" href="./manifest.json">
 
+<!-- Mobile Viewport Meta -->
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+  
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -276,7 +281,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.14</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.15</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -395,7 +400,7 @@
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
-const CURRENT_VERSION = 'v5.14';
+const CURRENT_VERSION = 'v5.15';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 let aisKey = localStorage.getItem('aisKey') || '769a160fd5bdd97fb5a5a1a05f80e845b5e81a9c';
