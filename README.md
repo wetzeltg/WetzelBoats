@@ -218,6 +218,8 @@ Add `navigator.wakeLock.request('screen')` to keep the screen on while the app i
 
 | Version | Changes |
 |---------|---------|
+| v5.16 | Updated flight schedule for July 2026 trip |
+| v5.15 | Added PWA support (manifest.json and service worker) for fullscreen/installable support |
 | v5.13 | Added "Message in a Bottle" video feature to the roadmap |
 | v5.12 | Fixed SyntaxError on jokeBannerDismissed and moved version constants to top |
 | v5.11 | Moved version constants to top of script and fixed header HTML typo |
