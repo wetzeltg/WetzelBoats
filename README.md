@@ -69,8 +69,8 @@ Current hardcoded trips (update in `index.html` under `const TRIPS`):
 
 | Flight | Direction | Date & Time | Notes |
 |--------|-----------|-------------|-------|
-| AS 309 | FL → SEA | June 12, 2026 · 10:45 PM PDT | Arrives Seattle |
-| AS 394 | SEA → FL | June 14, 2026 · 9:33 PM PDT | Departs Seattle |
+| AS 309 | FL → SEA | July 22, 2026 · 10:45 PM PDT | Arrives Seattle |
+| AS 295 | SEA → FL | July 26, 2026 · 7:42 AM PDT | Departs Seattle |
 
 Photos stored as `d1.jpg` through `d14.jpg`, rotate every 30 seconds with blurred backdrop fill technique.
 

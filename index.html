@@ -281,7 +281,7 @@
       <div class="hd-stat"><strong id="hd-vessels">9</strong><span>vessels in sound</span></div>
       <div class="hd-stat"><strong id="hd-whales">4</strong><span>whale reports (24h)</span></div>
       <span id="clock">--:--</span>
-      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.15</span>
+      <span style="font-size:10px;font-family:var(--mono);color:#9ca3af;">v5.16</span>
       <button class="settings-btn" onclick="document.getElementById('configModal').classList.add('open')">⚙ API Keys</button>
     </div>
   </header>
@@ -400,7 +400,7 @@
 // ═══════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════
-const CURRENT_VERSION = 'v5.15';
+const CURRENT_VERSION = 'v5.16';
 const GITHUB_URL = 'https://wetzeltg.github.io/WetzelBoats/index.html';
 
 let aisKey = localStorage.getItem('aisKey') || '769a160fd5bdd97fb5a5a1a05f80e845b5e81a9c';
@@ -1182,12 +1182,12 @@ function rotateDaddyPhoto() {
 // Dates are fallbacks - app will try to look up actual times via AeroDataBox API
 const TRIPS = [
   {
-    arrive:    new Date('2026-06-12T22:45:00-07:00'),  // AS309 arrives SEA 10:45 PM PDT
-    depart:    new Date('2026-06-14T21:33:00-07:00'),  // AS394 departs SEA 9:33 PM PDT
+    arrive:    new Date('2026-07-22T22:45:00-07:00'),  // AS309 arrives SEA 10:45 PM PDT
+    depart:    new Date('2026-07-26T07:42:00-07:00'),  // AS295 departs SEA 7:42 AM PDT
     arrFlight: 'AS309',
-    depFlight: 'AS394',
-    arrDate:   '2026-06-12',
-    depDate:   '2026-06-14',
+    depFlight: 'AS295',
+    arrDate:   '2026-07-22',
+    depDate:   '2026-07-26',
   },
 ];
 
